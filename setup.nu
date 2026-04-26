@@ -4,7 +4,7 @@ use std/log
 use std/util "path add"
 
 export-env {
-  $env.DOT_DIR = ($env.HOME | path join ".local/share/fedora-niri-config")
+  $env.DOT_DIR = ($env.HOME | path join ".fedora-niri-config")
 }
 
 export def die [msg: string] {
@@ -120,7 +120,22 @@ def "main vscode install" [] {
 
   if not (has-cmd code) {
     log info "Installing vscode"
-    do -i { ^dnf check-update }
+    do -i {
+      ^sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+      let repo = "
+    [code]
+    name=Visual Studio Code
+    baseurl=https://packages.microsoft.com/yumrepos/vscode
+    enabled=1
+    autorefresh=1
+    type=rpm-md
+    gpgcheck=1
+    gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+    "
+      $repo | ^sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+      ^dnf check-update
+    }
     si ["code"]
   }
 }

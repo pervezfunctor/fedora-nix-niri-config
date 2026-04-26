@@ -8,7 +8,7 @@ Run the bootstrap script:
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-niri-config/main/setup)"
 ```
 
-The bootstrap script clones the repo to `~/.local/share/fedora-niri-config`, installs pixi and configures shell.
+The bootstrap script clones the repo to `~/.fedora-niri-config`, installs pixi and configures shell.
 
 ## Nushell setup commands
 

@@ -5,7 +5,7 @@ if test -f ~/.fish_profile
   source ~/.fish_profile
 end
 
-set -gx DOT_DIR $HOME/.local/share/fedora-niri-config
+set -gx DOT_DIR $HOME/.fedora-niri-config
 if not set -q XDG_DATA_DIRS
     set -gx XDG_DATA_DIRS /usr/local/share /usr/share
 end
@@ -70,3 +70,15 @@ alias i 'sudo dnf install'
 alias r 'sudo dnf remove'
 alias s 'dnf search'
 alias u 'sudo dnf update'
+
+if has_cmd eza
+    alias ls  'eza --icons --group-directories-first'
+end
+
+if has_cmd bat
+    alias cat 'bat'
+end
+
+if has_cmd uvx
+    alias uv-marimo-standalone 'uvx --with pyzmq --from "marimo[sandbox]" marimo edit --sandbox'
+end

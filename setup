@@ -6,30 +6,37 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-die() {
-  printf "ERROR: %s\n" "$*" >&2
-  exit 1
+readonly REPO_URL="https://github.com/pervezfunctor/fedora-niri-config.git"
+readonly DOT_DIR="$HOME/.fedora-niri-config"
+
+log() {
+  printf "INFO: %s\n" "$*"
+  printf "INFO: %s\n" "$*" >>"${HOME}/.fedora-niri-config.log"
 }
 
-readonly REPO_URL="https://github.com/pervezfunctor/fedora-niri-config.git"
-readonly DOT_DIR="$HOME/.local/share/fedora-niri-config"
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  printf "ERROR: %s\n" "$*" >>"${HOME}/.fedora-niri-config.log"
+  exit 1
+}
 
 dotfiles_install() {
   has_cmd git || die "git not found. Quitting."
 
-  [ -d "$DOT_DIR" ] || {
+  if [ ! -d "$DOT_DIR" ]; then
     echo "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
     return
-  }
-
-  [ -z "$(git -C "$DOT_DIR" status --porcelain)" ] && {
+  elif [ -z "$(git -C "$DOT_DIR" status --porcelain)" ]; then
     echo "Dotfiles repo clean. Pulling latest changes"
     git -C "$DOT_DIR" pull --rebase || {
       echo "Rebase failed. Aborting."
       git -C "$DOT_DIR" rebase --abort || die "Failed to abort rebase"
     }
-  }
+  else
+    echo "Dotfiles repo dirty. Skipping update."
+    return
+  fi
 }
 
 system_install() {
