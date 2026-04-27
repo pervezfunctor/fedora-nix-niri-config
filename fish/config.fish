@@ -16,6 +16,7 @@ fish_add_path --global --move \
     $DOT_DIR \
     $HOME/.pixi/bin \
     $HOME/bin \
+    $HOME/.opencode/bin \
     $HOME/.local/bin
 
 function has_cmd
@@ -82,9 +83,6 @@ end
 if has_cmd uvx
     alias uv-marimo-standalone 'uvx --with pyzmq --from "marimo[sandbox]" marimo edit --sandbox'
 end
-
-# opencode
-fish_add_path /home/pervez/.opencode/bin
 
 if has_cmd zed
     set -gx VISUAL zed
