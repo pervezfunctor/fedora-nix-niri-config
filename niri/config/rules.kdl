@@ -25,7 +25,6 @@ window-rule {
     opacity 0.99
 }
 
-// Open DMS windows as floating by default
 window-rule {
     match app-id=r#"org.quickshell$"#
     open-floating true
@@ -34,6 +33,21 @@ window-rule {
 window-rule {
     match app-id="^(code)$"
     default-column-width { proportion 0.6667; }
+}
+
+window-rule {
+    match app-id="^(app.zen_browser.zen)$"
+    background-effect {
+        blur true
+    }
+}
+
+window-rule {
+    match app-id="^(dev.zed.Zed)$"
+    default-column-width { proportion 0.6667; }
+    background-effect {
+        blur true
+    }
 }
 
 window-rule {
@@ -68,6 +82,14 @@ window-rule {
 
 window-rule {
     match app-id="^kitty$"
+
+    background-effect {
+        blur true
+    }
+}
+
+window-rule {
+    match app-id="^Zed$"
 
     background-effect {
         blur true
