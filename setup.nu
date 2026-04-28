@@ -184,7 +184,7 @@ def "main docker" [] {
 }
 
 def "main kitty" [] {
-  if not (has-cmd "$env.HOME/.local/kitty.app/bin/kitty") {
+  if not (has-cmd $"($env.HOME)/.local/kitty.app/bin/kitty") {
     curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
   }
 
