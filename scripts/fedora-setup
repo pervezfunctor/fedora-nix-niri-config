@@ -49,7 +49,7 @@ system_install() {
 
   sudo dnf install -y git gcc pipx libatomic make plocate tar tmux unzip \
     zstd bat direnv duf eza fd fzf gdu gh jq ripgrep tealdeer trash-cli \
-    zoxide difftastic less htop gum
+    zoxide difftastic less htop gum tmux
 
   tldr --update || die "Failed to install dependencies"
 
@@ -66,7 +66,7 @@ pixi_install() {
 }
 
 pixi_packages_install() {
-  pixi global install carapace nushell xh television starship bottom nvim lazyygit
+  pixi global install carapace nushell xh television starship bottom
 }
 
 fresh_install() {
@@ -92,7 +92,7 @@ main() {
 
   export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$PATH"
 
-  if has_commands pixi fish nu trash gh starship gum; then
+  if has_commands git pixi fish nu trash gh starship gum; then
     "${DOT_DIR}/scripts/setup.nu" 2>&1 | tee -a "${HOME}/.fedora-config.log"
   else
     fresh_install
