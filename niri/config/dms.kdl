@@ -1,4 +1,6 @@
 binds {
+  Super+Alt+L { spawn-sh "dms ipc call lock lock"; }
+
   Mod+D { spawn-sh "dms ipc call spotlight toggle"; }
   Super+Alt+L { spawn-sh "dms ipc call lock lock"; }
 
