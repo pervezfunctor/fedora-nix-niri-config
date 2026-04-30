@@ -22,27 +22,30 @@ fish_add_path --global --move \
     $HOME/.cargo/bin \
     $HOME/.local/kitty.app/bin
 
+
 function has_cmd
     type -q $argv[1]
 end
 
-if status is-interactive
-    if has_cmd zoxide
-        zoxide init fish | source
-    end
+if ! status is-interactive
+  return
+end
 
-    if has_cmd fzf
-        fzf --fish | source
-    end
+if has_cmd zoxide
+    zoxide init fish | source
+end
 
-    if has_cmd starship
-        starship init fish | source
-    end
+if has_cmd fzf
+    fzf --fish | source
+end
 
-    if has_cmd carapace
-        set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
-        carapace _carapace | source
-    end
+if has_cmd starship
+    starship init fish | source
+end
+
+if has_cmd carapace
+    set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
+    carapace _carapace | source
 end
 
 function fish_greeting
@@ -70,7 +73,7 @@ alias fpr 'flatpak remove --user'
 alias fps 'flatpak search'
 alias fpu 'flatpak update --user'
 
-alias i 'sudo dnf install'
+alias i 'sudo dnf install -y'
 alias r 'sudo dnf remove'
 alias s 'dnf search'
 alias u 'sudo dnf update'
