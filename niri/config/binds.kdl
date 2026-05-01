@@ -139,7 +139,7 @@ binds {
         spawn-sh "FISH_SIMPLE=1 kitty --class scratch-terminal";
     }
     Mod+Shift+Return {
-        spawn-sh "kitten quick-access-terminal --config ~/.fedora-config/extras/quick_access_terminal.conf";
+        spawn-sh "kitten quick-access-terminal";
     }
     Mod+Ctrl+Shift+Space {
         spawn-sh "niri msg action focus-workspace 2 && ~/.fedora-config/scripts/kitty-ai.nu";
