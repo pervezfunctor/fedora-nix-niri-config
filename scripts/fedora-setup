@@ -54,6 +54,12 @@ system_install() {
   tldr --update || true
 
   sudo updatedb || true
+
+  if gh auth setup-git; then
+    log "Make sure to setup github authentication with: `gh auth login`"
+  else
+    log "Failed to setup github credentials: Use `gh auth login` followed by `gh auth setup-git` to fix this"
+  fi
 }
 
 pixi_install() {
