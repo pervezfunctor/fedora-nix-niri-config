@@ -29,8 +29,8 @@
   "buffer_font_size": 15,
   "theme": {
     "mode": "system",
-    "light": "Catppuccin Latte",
-    "dark": "Catppuccin Mocha",
+    "light": "Catppuccin Latte (Blur)",
+    "dark": "Catppuccin Mocha (Blur)",
   },
 
   "ensure_final_newline_on_save": true,
