@@ -387,22 +387,23 @@ def "main greetd keyring fix" [] {
   let pam_file = "/etc/pam.d/greetd"
 
   if not ($pam_file | path exists) {
-      error make { msg: $"PAM file not found: ($pam_file)" }
+    error+ "PAM file not found: ($pam_file)"
+    return
   }
 
   let lines = (open $pam_file | lines)
 
   let new_lines = ($lines | each {|l|
-      if ($l | str contains "pam_gnome_keyring.so") {
-          $l | str replace --regex '^\s*-' ''
-      } else {
-          $l
-      }
+    if ($l | str contains "pam_gnome_keyring.so") {
+      $l | str replace --regex '^\s*-' ''
+    } else {
+      $l
+    }
   })
 
   if $lines == $new_lines {
-      print "No changes needed."
-      exit
+    print "No changes needed."
+    exit
   }
 
   let backup = $"($pam_file).bak"
@@ -419,14 +420,14 @@ def "main greetd keyring fix" [] {
 
 def "main greetd" [] {
   if not (has-cmd dms) {
-      log error "dms is not installed. Cannot setup greetd."
-      return
+    log error "dms is not installed. Cannot setup greetd."
+    return
   }
 
   log info "Installing greeter"
   si ["dms-greeter"]
   dms greeter enable
-  dms greeter sync
+  log+ "After logging in with greetd, run `dms greeter sync` to apply changes."
 
   main greetd keyring fix
 }
