@@ -89,14 +89,6 @@ window-rule {
 }
 
 window-rule {
-    match app-id="^Zed$"
-
-    background-effect {
-        blur true
-    }
-}
-
-window-rule {
     match app-id="^Ghostty$"
 
     background-effect {
