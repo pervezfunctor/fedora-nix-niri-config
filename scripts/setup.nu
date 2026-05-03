@@ -7,7 +7,11 @@ export-env {
   $env.DOT_DIR = ($env.HOME | path join ".fedora-config")
 }
 
-export def die [msg: string] {
+def is-atomic []: nothing -> bool {
+  has-cmd rpm-ostree
+}
+
+def die [msg: string] {
   log critical $msg
   error make {
     msg: $msg
@@ -15,7 +19,7 @@ export def die [msg: string] {
   }
 }
 
-export def ensure-parent-dir [path: string] {
+def ensure-parent-dir [path: string] {
   let parent = ($path | path dirname)
   if not (dir-exists $parent) {
     log info $"creating directory: ($parent)"
@@ -23,22 +27,22 @@ export def ensure-parent-dir [path: string] {
   }
 }
 
-export def has-cmd [cmd: string]: nothing -> bool {
+def has-cmd [cmd: string]: nothing -> bool {
   (which $cmd | is-not-empty)
 }
 
-export def dir-exists [path: string]: nothing -> bool {
+def dir-exists [path: string]: nothing -> bool {
   if not ($path | path exists) { return false }
   ($path | path type) == "dir"
 }
 
-export def is-fedora []: nothing -> bool {
+def is-fedora []: nothing -> bool {
   if not ("/etc/redhat-release" | path exists) { return false }
   let content = (open /etc/redhat-release | str downcase)
   $content =~ "fedora"
 }
 
-export def sln [src: string, dst: string] {
+def sln [src: string, dst: string] {
   if not (($src | path exists) and (($src | path type) != "dir")) {
     log error $"($src) does not exist or is a directory. Skipping linking."
     return
@@ -49,7 +53,7 @@ export def sln [src: string, dst: string] {
   ^ln -sf $src $dst
 }
 
-export def "main stow" [package: string] {
+def "main stow" [package: string] {
   let root = (($env.DOT_DIR | path join $package) | path expand)
 
   for f in (glob $"($root)/**/*" --no-dir) {
@@ -73,12 +77,12 @@ def group-add [group: string] {
   }
 }
 
-export def si [packages: list<string>] {
+def si [packages: list<string>] {
   log info "Installing packages"
   do -i { ^sudo dnf install -y ...$packages }
 }
 
-export def touch-files [dir: string, files: list<string>] {
+def touch-files [dir: string, files: list<string>] {
   do -i { mkdir $dir }
 
   for f in $files {
@@ -169,7 +173,7 @@ def "main fonts" [] {
     brew install --cask font-jetbrains-mono-nerd-font font-monaspace-nerd-font
   }
 
-  if (has-cmd rpm-ostree) { return }
+  if (is-atomic) { return }
   si [
     "cascadia-mono-nf-fonts"
     "cascadia-code-nf-fonts"
@@ -224,71 +228,6 @@ def "main vscode" [] {
   main vscode config
 }
 
-def "main vscode atomic" [] {
-  if not (has-cmd code) {
-    if not (has-cmd brew) {
-      brew-install
-    }
-    brew install --cask visual-studio-code-linux
-  }
-
-  main vscode config
-}
-
-def "main kitty atomic" [] {
-  if not (has-cmd kitty) {
-    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
-  }
-  main stow "kitty"
-}
-
-def is-shell-default [shell_path: string] {
-  open /etc/passwd
-  | lines
-  | parse "{user}:{rest}"
-  | where user == $env.USER
-  | first
-  | get rest
-  | str ends-with $shell_path
-}
-
-def "main fish default" [] {
-  log info "Setting fish as default shell"
-  let fish_path = (which fish | get 0.path)
-  if not (open /etc/shells | lines | any {|l| $l == $fish_path }) {
-    $fish_path | sudo tee -a /etc/shells
-  }
-  if not (is-shell-default $fish_path) {
-    do -i { chsh -s $fish_path $env.USER }
-  }
-}
-
-def "main fish autostart" [] {
-  let rc_file = ".zshrc"
-  let rc_path = ($env.HOME | path join $rc_file)
-  let marker = "exec fish"
-
-  let snippet = '
-# Auto-start fish for interactive shells
-if [[ $- == *i* ]] && [[ -z "$FISH_LAUNCHED" ]]; then
-  if command -v fish >/dev/null 2>&1; then
-    export FISH_LAUNCHED=1
-    exec fish || echo "Failed to start fish"
-  fi
-fi
-'
-
-  if not ($rc_path | path exists) {
-    error make {msg: $"($rc_file) not found"}
-  }
-  if not (open $rc_path | str contains $marker) {
-    $snippet | save --append $rc_path
-    log info $"Added fish auto-start to ($rc_file)"
-  } else {
-    log info $"Fish auto-start already in ($rc_file), skipping"
-  }
-}
-
 def "main docker" [] {
   if not (has-cmd docker) {
     sudo dnf install -y docker docker-compose
@@ -306,30 +245,25 @@ def "main wallpapers" [] {
 }
 
 def "main wallpapers ml4w" [] {
+  let base = $"$($env.HOME)/.local/share/backgrounds"
+  let dir = $"($base)/ml4w"
+  if (dir-exists $dir) {
+    log info "ML4W wallpapers already installed, skipping"
+    return
+  }
+
   log info "Installing ML4W wallpapers"
-  mkdir ~/.local/share/backgrounds/ml4w
-  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git ~/.local/share/backgrounds/ml4w
-}
-
-def "main fish config" [] {
-  log info "Setting up fish config"
-  main stow "fish"
-
-  log info "Changing default shell to fish"
-  do -i { ^chsh -s (which fish) }
-}
-
-def "main fish" [] {
-  si ["fish"]
-  main fish config
-}
-
-def "main kitty latest" [] {
-  curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+  mkdir $base
+  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git $dir
+  log info "ML4W wallpapers installed successfully"
 }
 
 def "main kitty" [] {
-  si ["kitty"]
+  if (is-atomic) {
+    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+  } else {
+    si ["kitty"]
+  }
 
   touch-files ~/.config/kitty ["local.conf", "dank-theme.conf", "dank-tabs.conf"]
   main stow "kitty"
@@ -487,23 +421,21 @@ def "fpi" [pkgs: list<string>] {
   }
 }
 
-def "main flatpak" [] {
-  if not (has-cmd flatpak) {
-    si ["flatpak"]
-  }
-
+def "main flathub" [] {
   log info "Adding flathub remote"
   ^flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+}
 
-  let flatpaks = [
-    "com.github.tchx84.Flatseal"
-  ]
-
+def "main flatpak" [] {
+  if not (has-cmd flatpak) { si ["flatpak"] }
+  main flathub
+  let flatpaks = ["com.github.tchx84.Flatseal"]
   fpi $flatpaks
 }
 
 def "main apps" [] {
   main flatpak
+
   let flatpaks = [
     "app.zen_browser.zen"
     "md.obsidian.Obsidian"
@@ -649,20 +581,12 @@ let ALL_COMMANDS = {
     desc: "Install and configure OpenCode"
     run: {|| main opencode }
   }
-  "vscode atomic": {
-    desc: "Install vscode via brew (atomic)"
-    run: {|| main vscode atomic }
-  }
-  "kitty atomic": {
-    desc: "Install kitty via installer script (atomic)"
-    run: {|| main kitty atomic }
-  }
 }
 
-let COMMANDS = if (has-cmd rpm-ostree) {
-  $ALL_COMMANDS | select "flatpak" "apps" "zed" "nvim" "rust" "uv" "vp" "opencode"
+let COMMANDS = if (is-atomic) {
+  $ALL_COMMANDS | select "flatpak" "apps" "zed" "nvim" "rust" "uv" "vp" "opencode" "kitty"
 } else {
-  $ALL_COMMANDS | reject "vscode atomic" "kitty atomic"
+  $ALL_COMMANDS
 }
 
 def run-command [cmd: string] {
@@ -699,7 +623,6 @@ def "main help" [] {
   print "  opencode         Install opencode(AI)"
   print "  virt config      Configure libvirt"
   print "  kitty            Install and Configure Kitty terminal"
-  print "  fish             Install and configure fish shell"
   print "  wallpapers       Wallpapers from bazzite."
   print "  wallpapers ml4w  Wallpapers from ml4w github repository"
   print ""
@@ -728,10 +651,6 @@ def check-commands [...cmds: string]: nothing -> bool {
 }
 
 def checks [] {
-  if (has-cmd rpm-ostree) {
-    die "fedora atomic not supported. Quitting."
-  }
-
   if not (check-commands "trash" "git" "pixi") {
     die "Required commands not available. Quitting."
   }
