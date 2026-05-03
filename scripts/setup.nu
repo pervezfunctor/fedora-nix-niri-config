@@ -165,6 +165,11 @@ def "main dev" [] {
 }
 
 def "main fonts" [] {
+  if (has-cmd brew) {
+    brew install --cask font-jetbrains-mono-nerd-font font-monaspace-nerd-font
+  }
+
+  if (has-cmd rpm-ostree) { return }
   si [
     "cascadia-mono-nf-fonts"
     "cascadia-code-nf-fonts"
@@ -172,10 +177,6 @@ def "main fonts" [] {
     "rsms-inter-vf-fonts"
     "material-symbols-fonts"
   ]
-
-  if (has-cmd brew) {
-    brew install font-jetbrains-mono-nerd-font
-  }
 }
 
 def "main vscode install" [] {
@@ -221,6 +222,24 @@ def "main vscode config" [] {
 def "main vscode" [] {
   main vscode install
   main vscode config
+}
+
+def "main vscode atomic" [] {
+  if not (has-cmd code) {
+    if not (has-cmd brew) {
+      brew-install
+    }
+    brew install --cask visual-studio-code-linux
+  }
+
+  main vscode config
+}
+
+def "main kitty atomic" [] {
+  if not (has-cmd kitty) {
+    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+  }
+  main stow "kitty"
 }
 
 def is-shell-default [shell_path: string] {
@@ -573,7 +592,7 @@ def "main zed" [] {
   main stow "zed"
 }
 
-let COMMANDS = {
+let BASE_COMMANDS = {
   niri: {
     desc: "Install and configure niri WM"
     run: {|| main niri }
@@ -610,44 +629,57 @@ let COMMANDS = {
     desc: "Install and configure(Astro) Neovim"
     run: {|| main nvim }
   }
+  "rust": {
+    desc: "Install and configure Rust toolchain"
+    run: {|| main rust }
+  }
+  "uv": {
+    desc: "Install and configure uv(Python)"
+    run: {|| main uv }
+  }
+  "vp": {
+    desc: "Install and configure Vite Plus(Node)"
+    run: {|| main vp }
+  }
+  "nix": {
+    desc: "Install and configure Nix"
+    run: {|| main nix }
+  }
+  "opencode": {
+    desc: "Install and configure OpenCode"
+    run: {|| main opencode }
+  }
 }
 
-def commands [] {
-  $COMMANDS | transpose name value
+let ATOMIC_COMMANDS = {
+  "vscode atomic": {
+    desc: "Install vscode via brew (atomic)"
+    run: {|| main vscode atomic }
+  }
+  "kitty atomic": {
+    desc: "Install kitty via installer script (atomic)"
+    run: {|| main kitty atomic }
+  }
 }
 
-def options [] {
-  commands | get name
+let COMMANDS = if (has-cmd rpm-ostree) {
+  $BASE_COMMANDS | select "flatpak" "apps" "zed" "nvim" "rust" "uv" "vp" "opencode" | merge $ATOMIC_COMMANDS
+} else {
+  $BASE_COMMANDS
 }
 
 def run-command [cmd: string] {
   let key = ($cmd | str trim)
-  let action = (
-    commands
-    | where name == $key
-    | get value
-    | first
-  )
-
-  if ($action | is-empty) {
+  if not ($key in $COMMANDS) {
     log warning $"Unknown command: ($key)"
     return
   }
-
-  do $action.run
+  do ($COMMANDS | get $key).run
 }
 
-def gum-select-install [options: list<string>, default_installs: list<string> = []] {
-
-  if not (has-cmd gum) {
-    die "gum is required for interactive selection"
-  }
-  let defaults = ($default_installs | str join ",")
-
-  options
-  | str join "\n"
-  | ^gum choose --no-limit --selected $defaults
-  | lines
+def nu-select-install [] {
+  $COMMANDS | columns
+  | input list --multi
   | each {|cmd| run-command ($cmd | str trim) }
   | ignore
 }
@@ -664,7 +696,7 @@ def "main help" [] {
   print "  greetd           Configure greetd greeter"
   print "  stow <package>   Symlink a config package into ~/.config"
 
-  commands | each {|row| print $"  ($row.name | fill -w 16) ($row.value.desc)" }
+  $COMMANDS | transpose name value | each {|row| print $"  ($row.name | fill -w 16) ($row.value.desc)" }
 
   print ""
   print "  opencode         Install opencode(AI)"
@@ -703,7 +735,7 @@ def checks [] {
     die "fedora atomic not supported. Quitting."
   }
 
-  if not (check-commands "gum" "trash" "git" "pixi") {
+  if not (check-commands "trash" "git" "pixi") {
     die "Required commands not available. Quitting."
   }
 
@@ -720,5 +752,5 @@ def "main default" [] {
 
 def main [] {
   main default
-  gum-select-install (options)
+  nu-select-install
 }
