@@ -148,4 +148,10 @@ binds {
     Mod+Ctrl+Shift+Space {
         spawn-sh "niri msg action focus-workspace 2 && ~/.fedora-config/scripts/kitty-ai.nu";
     }
+    Mod+Alt+Return {
+        spawn-sh "~/.fedora-config/scripts/quick-cmd.bash";
+    }
+    Mod+Ctrl+Return {
+        spawn-sh "~/.fedora-config/scripts/quick-cmd.bash --hold";
+    }
 }
