@@ -30,6 +30,7 @@ main() {
   has_cmd git || {
     log "Installing git..."
     sudo zypper install -y git
+    has_cmd git || die "git installation failed"
   }
 
   if [ ! -d "$DOT_DIR" ]; then
@@ -41,23 +42,31 @@ main() {
   log "Removing busybox..."
   sudo zypper remove -y busybox* || true
   sudo zypper remove -y busybox-less || true
+
   log "Installing less..."
   sudo zypper install -y less
+
   log "Installing packages..."
   sudo zypper install -y nushell bat difftastic duf fd gdu gh git \
     htop jq less rclone ripgrep rsync ShellCheck shfmt tar tealdeer \
-    tmux trash-cli ugrep unzip yq zstd dysk bottom starship xh fish
+    tmux trash-cli ugrep unzip yq zstd dysk bottom starship xh fish \
+    coreutils grep sed sd python3-pipx python3-uv make cmake clang \
+    clang-tools watchexec boost-devel Catch2-devel libc++-devel gcc16 \
+    gcc16-c++ ninja gawk
 
   log "Setting up fish shell..."
   mkdir -p ~/.config/fish
+
   log "Trashing old fish config, restore with 'trash-restore'..."
   if ! trash ~/.config/fish/config.fish; then
     log "$HOME/.config/fish/config.fish does not exist. Skipping trash."
   fi
+
   log "Linking new fish config..."
   ln -sf "$DOT_DIR"/config.fish ~/.config/fish/config.fish
+
   log "Setting fish as default shell..."
-  if ! sudo chsh -s $(which fish) "$USER"; then
+  if ! sudo chsh -s "$(which fish)" "$USER"; then
     log "Failed to set fish as default shell. You may need to run 'sudo chsh -s $(which fish) $USER' manually."
   else
     log "Fish set as default shell successfully."
