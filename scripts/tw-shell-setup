@@ -38,6 +38,10 @@ main() {
       die "git clone failed"
   fi
 
+  log "Removing busybox..."
+  sudo zypper remove -y busybox* || true
+  log "Installing less..."
+  sudo zypper install -y less
   log "Installing packages..."
   sudo zypper install -y nushell bat difftastic duf fd gdu gh git \
     htop jq less rclone ripgrep rsync ShellCheck shfmt tar tealdeer \
@@ -46,7 +50,7 @@ main() {
   log "Setting up fish shell..."
   mkdir -p ~/.config/fish
   log "Trashing old fish config, restore with 'trash-restore'..."
-  trash ~/.config/fish/config.fish
+  trash ~/.config/fish/config.fish || true
   log "Linking new fish config..."
   ln -sf "$DOT_DIR"/config.fish ~/.config/fish/config.fish
   log "Setting fish as default shell..."
