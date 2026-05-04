@@ -378,6 +378,7 @@ def "main wm" [] {
   log info "Installing window manager packages"
   si [
     "adw-gtk3-theme"
+    "alacritty"
     "brightnessctl"
     "cups-pk-helper"
     "ddcutil"
@@ -387,6 +388,7 @@ def "main wm" [] {
     "fastfetch"
     "fuse"
     "fuse-common"
+    "fuzzel"
     "fwupd"
     "gcr"
     "gcr"

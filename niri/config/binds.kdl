@@ -1,8 +1,12 @@
 binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
-    // Mod+Return  { spawn "~/.local/kitty.app/bin/kitty"; }
-    Mod+Return  { spawn "kitty"; }
+    // Mod+Return { spawn "~/.local/kitty.app/bin/kitty"; }
+    // Mod+Return { spawn "kitty"; }
+    Mod+Return { spawn "alacritty"; }
+
+    Mod+Space    { spawn "fuzzel"; }
+    Mod+W  { spawn "fuzzel-windows.nu"; }
 
     Ctrl+Alt+Delete { quit; }
     Mod+Shift+Q     { quit; }
