@@ -11,7 +11,7 @@ sudo dnf upgrade --offline
 Run the following bootstrap script
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
 ```
 
 This script clones this repo to `~/.fedora-config`, installs nix and installs fish as your default shell.

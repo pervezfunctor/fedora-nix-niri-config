@@ -484,7 +484,7 @@ def "main greetd" [] {
   log info "Installing greeter"
   si ["dms-greeter"]
   dms greeter enable
-  log+ "After logging in with greetd, run `dms greeter sync` to apply changes."
+  log info "After logging in with greetd, run `dms greeter sync` to apply changes."
 
   main greetd keyring fix
 }
@@ -650,7 +650,7 @@ def "main home-manager" [] {
     return
   }
 
-  nix run home-manager -- switch --flake "$($env.HOME)/.fedora-config/home-manager#($env.USER)" --impure
+  nix run home-manager -- switch --flake "$($env.HOME)/.fedora-config/scripts/home-manager#($env.USER)" --impure
 }
 
 let ALL_COMMANDS = {
