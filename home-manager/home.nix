@@ -19,6 +19,8 @@
       nixd
       nixfmt
       nushell
+      starship
+
       # dysk
       # bottom
       # television
@@ -34,39 +36,6 @@
     direnv = {
       enable = true;
       nix-direnv.enable = true;
-      enableNushellIntegration = true;
-    };
-
-    nushell = {
-      enable = true;
-      plugins = [ pkgs.nushellPlugins.formats ];
-      settings = {
-        show_banner = false;
-      };
-    };
-
-    eza = {
-      enable = true;
-      enableNushellIntegration = true;
-    };
-
-    starship = {
-      enable = true;
-      enableZshIntegration = true;
-      enableNushellIntegration = true;
-    };
-
-    carapace = {
-      enable = true;
-      enableNushellIntegration = true;
-    };
-
-    fzf = {
-      enable = true;
-    };
-
-    zoxide = {
-      enable = true;
       enableNushellIntegration = true;
     };
   };
