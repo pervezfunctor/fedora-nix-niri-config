@@ -12,7 +12,7 @@ end
 set -gx XDG_DATA_DIRS $HOME/.local/share/flatpak/exports/share $XDG_DATA_DIRS
 
 fish_add_path --global --move \
-  "/home/linuxbrew/.linuxbrew/bin"
+  /home/linuxbrew/.linuxbrew/bin \
   $HOME/.local/share/flatpak/exports/bin \
   $DOT_DIR/scripts \
   $HOME/bin \
