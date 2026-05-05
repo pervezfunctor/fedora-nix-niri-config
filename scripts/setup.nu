@@ -269,6 +269,7 @@ def "main vp" [] {
   if (has-cmd vp) { return }
   curl -fsSL https://vite.plus | bash
   ~/.vite-plus/bin/vp install latest
+  path add $"($env.HOME)/.vite-plus/bin"
 }
 
 def "main dev" [] {
