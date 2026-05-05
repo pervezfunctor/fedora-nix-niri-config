@@ -15,13 +15,10 @@ fish_add_path --global --move \
   $HOME/.local/share/flatpak/exports/bin \
   $DOT_DIR/scripts \
   $HOME/bin \
+  $HOME/.pixi/bin \
   $HOME/.local/bin \
   $HOME/.cargo/bin \
   $HOME/.local/kitty.app/bin
-
-if test -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
-    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
-end
 
 function has_cmd
   type -q $argv[1]
@@ -102,13 +99,6 @@ if test -f ~/.vite-plus/env.fish
 end
 
 alias gh-refresh 'gh auth refresh -h github.com'
-
-if has_cmd nix
-  alias hms 'nix run home-manager -- switch --flake ~/.fedora-config/home-manager#$USER --impure'
-  alias ngc 'nix-garbage-collect -d'
-  alias nr 'nix run nixpkgs#'
-  alias nds 'devenv shell'
-end
 
 if test -n "$FISH_SIMPLE"
     return

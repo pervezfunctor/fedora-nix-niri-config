@@ -22,35 +22,60 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-main() {
-  has_cmd dnf || die "Only Fedora is supported. Quitting."
-  sudo dnf install -y git-core curl fish
+pixi_install() {
+  export PATH="$HOME/.pixi/bin:$PATH"
+  has_cmd pixi && return 0
+  has_cmd curl || die "curl is not installed. Quitting."
 
-  log "Fedora Config Setup..."
+  log "Installing pixi."
+  curl -fsSL https://pixi.sh/install.sh | sh
+  has_cmd pixi || die "Failed to install pixi"
+
+  log "Installing pixi packages..."
+  pixi global install nushell starship
+}
+
+fish_config() {
+  log "Configuring fish shell..."
+
+  log "Trashing existing config.fish...(use trash-restore to restore)"
+  trash ~/.config/fish/config.fish
+
+  log "Linking new config.fish..."
+  ln -sf "$DOT_DIR/config/fish/config.fish" ~/.config/fish/config.fish
+
+  log "Setting fish as default shell..."
+  sudo chsh -s "$(which fish)" "$USER"
+}
+
+dotfiles_clone() {
+  has_cmd git || die "git is not installed. Quitting."
 
   if [ ! -d "$DOT_DIR" ]; then
+    log "Cloning dotfiles..."
     git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" || die "git clone failed"
   fi
-
   [ -d "$DOT_DIR" ] || die "$DOT_DIR directory not found. Quitting."
+}
 
-  if ! has_cmd nix; then
-    if ! has_cmd /nix/var/nix/profiles/default/bin/nix; then
-      curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
-    fi
-    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-  fi
+system_install() {
+  log "Updating system packages..."
+  sudo dnf update -y
 
-  has_cmd nix || die "nix is not installed. Quitting."
+  log "Installing system dependencies..."
+  sudo dnf install -y git which less curl fish
+}
+main() {
+  log "Fedora Config Setup..."
 
-  trash ~/.config/fish/config.fish
-  ln -sf "$DOT_DIR/config/fish/config.fish" ~/.config/fish/config.fish
-  sudo chsh -s /usr/bin/fish "$USER"
-  has_cmd starship || curl -sS https://starship.rs/install.sh | sh
+  has_cmd dnf && system_install
+  pixi_install
+  fish_config
+  dotfiles_clone
 
   echo ""
   log "Shell configuration complete."
-  log "Use nix run nixpkgs#nushell -- ~/.fedora-config/scripts/setup.nu for further setup."
+  log "Use ~/.fedora-config/scripts/setup.nu for further setup."
   echo ""
 }
 

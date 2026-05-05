@@ -1,4 +1,12 @@
 {
+  "agent_servers": {
+    "codex-acp": {
+      "type": "registry",
+    },
+    "gemini": {
+      "type": "registry",
+    },
+  },
   "diff_view_style": "split",
 
   "auto_install_extensions": {
@@ -12,7 +20,6 @@
     "kdl": true,
     "make": true,
     "neocmake": true,
-    "nix": true,
     "nu": true,
   },
 

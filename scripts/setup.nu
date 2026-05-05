@@ -233,8 +233,9 @@ def "main shell" [] {
   do -i { tldr --update }
   do -i { sudo updatedb }
 
-  main fish
-  main home-manager
+  if (has_cmd pixi) {
+    pixi global install carapace
+  }
 }
 
 def --env bootstrap [] {
@@ -242,6 +243,7 @@ def --env bootstrap [] {
 
   for p in [
     "bin"
+    ".pixi/bin"
     ".local/bin"
   ] {
     path add ($env.HOME | path join $p)
@@ -624,17 +626,6 @@ def "main zed" [] {
   main stow "zed"
 }
 
-def "main home-manager" [] {
-  log info "Installing home-manager"
-  if not (has-cmd nix) {
-    log error "Nix is not installed. Please install it first."
-    return
-  }
-
-  do -i { trash ~/.config/nushell/config.nu }
-  nix run home-manager -- switch --flake $"($env.HOME)/.fedora-config/home-manager#($env.USER)" --impure -b backup
-}
-
 let ALL_COMMANDS = {
   shell: {
     desc: "Install shell tools and set Fish as default shell"
@@ -679,10 +670,6 @@ let ALL_COMMANDS = {
   vp: {
     desc: "Install and configure Vite Plus(Node)"
     run: {|| main vp }
-  }
-  home-manager: {
-    desc: "Install and configure Home Manager"
-    run: {|| main home-manager }
   }
   kitty: {
     desc: "Install and configure Kitty terminal"
@@ -742,7 +729,6 @@ def "main help" [] {
   print "  dev              Install development tools"
   print "  rust             Install Rust toolchain"
   print "  uv               Install UV toolchain"
-  print "  nix              Install Nix package manager"
   print "  vp               Install Vite Plus"
 }
 
@@ -763,7 +749,7 @@ def check-commands [...cmds: string]: nothing -> bool {
 }
 
 def prerequisites [] {
-  if not (check-commands "trash" "git" "nix") {
+  if not (check-commands "trash" "git" "pixi") {
     die "Required commands not available. Quitting."
   }
 

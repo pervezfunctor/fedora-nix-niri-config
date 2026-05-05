@@ -14,7 +14,7 @@ Run the following bootstrap script
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
 ```
 
-This script clones this repo to `~/.fedora-config`, installs nix and installs fish as your default shell.
+This script clones this repo to `~/.fedora-config`, installs pixi and installs fish as your default shell.
 
 Reboot your computer and open terminal. You should be in fish shell.
 
@@ -41,18 +41,6 @@ Install desktop applications with [flatpak](https://flathub.org/en)).
 ```sh
 setup.nu flatpak
 flatpak install --user flathub com.google.Chrome
-```
-
-Shell tools not available in official fedora repositories, should be available with `nix`.
-
-```sh
-setup.nu home-manager
-```
-
-Now add your packages to `home.pacakges` in `~/.fedora-config/home-manager/home.nix`. Then run
-
-```sh
-hms
 ```
 
 ## Niri setup
