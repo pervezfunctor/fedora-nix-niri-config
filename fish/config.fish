@@ -65,7 +65,7 @@ end
 alias i 'sudo dnf install -y'
 alias r 'sudo dnf remove'
 alias s 'dnf search'
-alias u 'sudo dnf update'
+alias u 'sudo dnf update --refresh'
 
 if has_cmd eza
     alias ls  'eza --icons --group-directories-first'

@@ -60,7 +60,7 @@ dotfiles_clone() {
 
 system_install() {
   log "Updating system packages..."
-  sudo dnf update -y
+  sudo dnf update --refresh -y
 
   log "Installing system dependencies..."
   sudo dnf install -y git which tar unzip less curl fish trash-cli

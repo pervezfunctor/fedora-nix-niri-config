@@ -492,8 +492,9 @@ def "main niri install" [] {
   }
 
   log info "Installing niri and dms"
-  # ^sudo dnf copr enable -y avengemedia/dms
+  ^sudo dnf copr enable -y avengemedia/dms
   ^sudo dnf copr enable -y yalter/niri
+  ^sudo dnf update --refresh -y
   si ["niri" "dms" "cliphist"]
 }
 
@@ -760,7 +761,7 @@ def "main help" [] {
 
 def "main update" [] {
   log info "Updating packages"
-  ^sudo dnf update -y
+  ^sudo dnf update --refresh -y
 }
 
 def check-commands [...cmds: string]: nothing -> bool {
