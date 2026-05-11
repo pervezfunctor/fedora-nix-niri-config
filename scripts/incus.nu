@@ -92,6 +92,7 @@ def "main tumbleweed" [name: string = "tumbleweed", ssh_key: string = ""] {
 def "main ssh" [name: string] {
   let ip = incus list $name -c 4 --format csv
     | lines
+    | str trim --char '"'
     | parse "{ip} ({iface})"
     | where iface =~ '^e(n|th)'
     | get 0.ip
