@@ -5,6 +5,30 @@ set -Eeuo pipefail
 readonly REPO_NAME="fedora-config"
 readonly DOT_DIR="$HOME/.${REPO_NAME}"
 
+readonly COMMON_PACKAGES=(
+  fish
+  bat
+  duf
+  fd
+  gdu
+  fzf
+  gh
+  htop
+  rclone
+  ripgrep
+  rsync
+  tmux
+  jq
+  tealdeer
+  trash-cli
+  ugrep
+  yq
+  shellcheck
+  difftastic
+  zoxide
+  eza
+)
+
 log() {
   printf "\033[1;34m🚀 %s\033[0m\n" "$*"
 }
@@ -32,7 +56,8 @@ pixi_install() {
 
   log "Installing pixi packages..."
   pixi global install nushell starship carapace
-  has_cmd fish || pixi global install fish
+
+  has_cmd rpm-ostree && pixi global install go-shfmt "${COMMON_PACKAGES[@]}"
 }
 
 fish_install() {
@@ -74,9 +99,7 @@ system_install() {
   sudo dnf update --refresh -y
 
   log "Installing system dependencies..."
-  sudo dnf install -y git which fish curl wget bat tar duf fd gcc gdu fzf gh \
-    htop less libatomic make pipx plocate rclone ripgrep rsync shfmt tmux jq \
-    tealdeer trash-cli ugrep unzip yq zstd shellcheck difftastic zoxide eza
+  sudo dnf install -y git which curl wget tar gcc less libatomic make pipx plocate shfmt unzip zstd "${COMMON_PACKAGES[@]}"
 
   tldr --update || true
   sudo updatedb || true
