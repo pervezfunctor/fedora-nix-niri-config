@@ -112,6 +112,18 @@ def "main install post" [] {
   }
 }
 
+def "main start" [name: string] {
+  incus start $name
+}
+
+def "main stop" [name: string] {
+  incus stop $name
+}
+
+def "main restart" [name: string] {
+  incus restart $name
+}
+
 def "main help" [] {
   print $"Usage: incus.nu <command>
 Commands:
@@ -129,6 +141,10 @@ Commands:
 
   ssh <name>      SSH into a VM instance
   destroy <name>  Stop and delete a VM instance
+
+  start <name>    Start a VM instance
+  stop <name>     Stop a VM instance
+  restart <name>  Restart a VM instance
 "
 }
 

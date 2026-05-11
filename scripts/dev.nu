@@ -4,6 +4,15 @@ use std/log
 use std/util "path add"
 use lib.nu *
 
+def "main docker" [] {
+  log info "Installing docker..."
+  sudo dnf install -y docker docker-compose
+  sudo systemctl start docker
+  sudo systemctl enable docker
+  sudo usermod -aG docker $env.USER
+  log info "Docker installed successfully"
+}
+
 def "main zed" [] {
   if (has-cmd zed) {
     log info "zed is already installed"
@@ -46,7 +55,7 @@ def "main vp" [] {
   curl -fsSL https://vite.plus | bash
 
   log info "Installing node"
-  ~/.vite-plus/bin/vp install latest
+  ~/.vite-plus/bin/vp env install latest
   path add $"($env.HOME)/.vite-plus/bin"
 }
 
@@ -58,6 +67,7 @@ Commands:
   uv      Install uv \(Python package manager\)
   vp      Install vp \(Vite Plus\) and latest Node.js
   zed     Install and configure Zed editor
+  docker  Install Docker and Docker Compose
   help    Show this help message
 
 Run without arguments to install all \(rust, uv, vp\)."
@@ -67,5 +77,4 @@ def main [] {
   main rust
   main uv
   main vp
-  main zed
 }
