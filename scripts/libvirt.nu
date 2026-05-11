@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
 use std/log
-use lib.nu *
+use ./lib.nu *
 
 def "libvirt config" [] {
   if not (has-cmd virsh) {

@@ -35,6 +35,14 @@ def "main zed" [] {
     main dev zed
 }
 
+def "main fonts" [] {
+    fonts
+}
+
+def "main stow" [...args: string] {
+    stow ...$args
+}
+
 def "main help" [] {
     print $"Usage: setup.nu <command> [args...]
 
@@ -46,6 +54,8 @@ Commands:
   vscode            Install and configure vscode
   libvirt           Install and configure libvirt/virt-manager
   brew              Install Homebrew
+  fonts             Install fonts
+  stow              Stow dotfiles
 
   help               Show this help message
 "

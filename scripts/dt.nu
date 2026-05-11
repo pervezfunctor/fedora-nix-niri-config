@@ -1,7 +1,7 @@
 #! /usr/bin/env nu
 
 use std/log
-use lib.nu *
+use ./lib.nu *
 
 export-env {
   $env.BOXES_DIR = ($nu.home-dir | path join ".boxes")

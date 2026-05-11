@@ -2,7 +2,7 @@
 
 use std/log
 use std/util "path add"
-use lib.nu *
+use ./lib.nu *
 
 def "main docker" [] {
   log info "Installing docker..."
