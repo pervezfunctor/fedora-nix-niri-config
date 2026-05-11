@@ -1,6 +1,7 @@
 #!/usr/bin/env nu
 
 use std/log
+use ./lib.nu *
 
 def "main dev" [...args] {
     nu ($env.FILE_PWD | path join "dev.nu") ...$args

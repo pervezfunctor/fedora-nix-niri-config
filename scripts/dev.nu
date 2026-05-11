@@ -3,7 +3,6 @@
 use std/log
 use std/util "path add"
 use lib.nu *
-use stow.nu
 
 def "main zed" [] {
   if (has-cmd zed) {

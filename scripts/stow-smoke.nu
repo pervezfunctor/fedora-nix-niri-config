@@ -1,7 +1,5 @@
 #!/usr/bin/env nu
 
-use stow.nu *
-
 def fail [msg: string] {
   error make { msg: $msg }
 }

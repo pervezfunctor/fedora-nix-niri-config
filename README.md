@@ -37,10 +37,10 @@ setup.nu dev
 ## Virtual Machines
 
 ```sh
-setup.nu incus install
-setup.nu incus install post   # after reboot
-setup.nu incus <name>         # one of debian, fedora, ubuntu, tumbleweed
-setup.nu incus ssh <name>
+incus.nu install
+incus.nu install post   # after reboot
+incus.nu <name>         # one of debian, fedora, ubuntu, tumbleweed
+incus.nu ssh <name>
 ```
 
 ## Niri setup
@@ -81,7 +81,6 @@ Some important keybindings
 
 ```sh
 setup.nu apps         # install obsidian and other flatpak apps
-setup.nu ui kitty     # install kitty terminal
 setup.nu vscode       # install and configure vscode
 setup.nu libvirt      # install and configure libvirt
 ```

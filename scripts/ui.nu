@@ -2,7 +2,6 @@
 
 use std/log
 use lib.nu *
-use stow.nu
 
 def "main wallpapers" [] {
   let base = '~/.local/share/backgrounds' | path expand
