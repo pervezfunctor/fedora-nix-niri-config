@@ -129,16 +129,16 @@ def "main help" [] {
   print $"Usage: incus.nu <command>
 Commands:
   install         Install and configure incus
-  install post      Steps after installing incus and reboot
+  install post    Steps after installing incus and reboot
 
   list            List running instances
   list images     List available cloud images
   search <query>  Search cloud images by keyword
 
-  debian       Create a Debian VM with cloud-init
-  ubuntu       Create an Ubuntu VM with cloud-init
-  fedora       Create a Fedora VM with cloud-init
-  tumbleweed   Create an openSUSE Tumbleweed VM with cloud-init
+  debian          Create a Debian VM with cloud-init
+  ubuntu          Create an Ubuntu VM with cloud-init
+  fedora          Create a Fedora VM with cloud-init
+  tumbleweed      Create an openSUSE Tumbleweed VM with cloud-init
 
   ssh <name>      SSH into a VM instance
   destroy <name>  Stop and delete a VM instance

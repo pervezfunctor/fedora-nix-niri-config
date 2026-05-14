@@ -146,7 +146,6 @@ export def "fonts" [] {
     "adwaita-sans-fonts"
     "rsms-inter-vf-fonts"
   ]
-  do -i { si ["material-symbols-fonts"] } # this is available only if dms copr is enabled
 }
 
 export def stow [...args: string] {

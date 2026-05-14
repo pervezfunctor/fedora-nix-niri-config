@@ -119,7 +119,7 @@ def "main niri install" [] {
   log info "Installing niri and dms"
   # ^sudo dnf copr enable -y avengemedia/dms
   ^sudo dnf copr enable -y yalter/niri
-  si ["niri" "dms" "cliphist"]
+  si ["niri" "dms" "cliphist" "material-symbols-fonts"]
 }
 
 def "main niri config" [] {
