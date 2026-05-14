@@ -19,6 +19,8 @@ def "main zed" [] {
     return
   }
 
+  fonts
+
   log info "Installing zed"
   curl -f https://zed.dev/install.sh | sh
 
