@@ -1,0 +1,163 @@
+use std/log
+use ./lib.nu *
+
+def "main gnome extensions" [] {
+  if not (has-cmd gext) {
+    if not (has-cmd pipx) {
+      log error "pipx not found, skipping gnome extensions"
+      return
+    }
+    pipx install gnome-extensions-cli --system-site-packages
+  }
+
+  if not (has-cmd gext) {
+    log error "gext not found, skipping gnome extensions"
+    return
+  }
+
+  let extensions = [
+    "paperwm@paperwm.github.com"
+    "switcher@landau.fi"
+    "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
+    "blur-my-shell@aunetx"
+    user-theme@gnome-shell-extensions.gcampax.github.com
+  ]
+
+  for ext in $extensions {
+    do -i { gext install $ext }
+    do -i { gext enable $ext }
+  }
+}
+
+def "main gnome flatpaks" [] {
+  if not (has-cmd flatpak) {
+    log error "flatpak not found, skipping gnome flatpaks"
+    return
+  }
+
+  let flatpaks = [
+    "com.mattjakeman.ExtensionManager"
+    "org.gtk.Gtk3theme.adw-gtk3"
+    "org.gtk.Gtk3theme.adw-gtk3-dark"
+    "io.github.swordpuffin.rewaita"
+    "flatpak run dev.qwery.AddWater"
+  ]
+  for pkg in $flatpaks {
+    do -i { flatpak --user install -y flathub $pkg }
+  }
+
+  do -i {
+    flatpak --user override --filesystem=xdg-config/gtk-3.0:rw
+    flatpak --user override --filesystem=xdg-config/gtk-4.0:rw
+  }
+}
+
+def "main gnome settings" [] {
+  if not (has-cmd gsettings) {
+    log error "gsettings not found, skipping gnome settings"
+    return
+  }
+
+  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
+  gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+  gsettings set org.gnome.desktop.interface accent-color 'green'
+  gsettings set org.gnome.desktop.interface gtk-key-theme "Emacs"
+  gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
+
+  gsettings set org.gnome.mutter dynamic-workspaces false
+  gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
+
+  if not (has-cmd dconf) {
+    log error "dconf not found, skipping gnome keybindings"
+    return
+  }
+
+  do -i {
+    dconf write /org/gnome/shell/extensions/paperwm/show-workspace-indicator false
+    dconf write /org/gnome/shell/extensions/paperwm/show-window-position-bar false
+    dconf write /org/gnome/shell/extensions/blur-my-shell/panel/blur "false"
+  }
+}
+
+def "main gnome keybindings" [] {
+  if not (has-cmd dconf) {
+    log error "dconf not found, skipping gnome keybindings"
+    return
+  }
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/close-window "['<Super>BackSpace', '<Super>q']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-right "['<Super>Right']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-left "['<Super>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-up "['<Super>Up']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-down "['<Super>Down']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-up "['<Shift><Super>Up']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-down "['<Shift><Super>Down']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-left "['<Shift><Super>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-right "['<Shift><Super>Right']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-up-workspace "['<Super>Page_Up', '<Super><Control>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-down-workspace "['<Super>Page_Down', '<Super><Control>Right']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-up-workspace "['<Shift><Super>Page_Up', '<Super><Control><Shift>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-down-workspace "['<Shift><Super>Page_Down', '<Super><Control><Shift>Right']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/new-window "['<Super>n']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/open-window-position-down "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/open-window-position-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-next "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-previous "@as []"
+  dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
+
+  dconf write /org/gnome/shell/extensions/dash-to-dock/hot-keys false
+  dconf write /org/gnome/desktop/wm/preferences/num-workspaces 4
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-1 "['<Super>1']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-2 "['<Super>2']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-3 "['<Super>3']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
+  dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
+
+  # dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
+  # dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
+}
+
+def "main help" [] {
+  log info "Available commands:"
+  log info "  main gnome extensions"
+  log info "  main gnome settings"
+  log info "  main gnome keybindings"
+  log info "  main gnome flatpaks"
+  log info "  main help"
+}
+
+def "main packages" [] {
+  log info "Installing packages..."
+  do -i {
+    si ["gnome-tweaks"]
+  }
+}
+
+def "main" [] {
+  fonts
+  main gnome extensions
+  main gnome settings
+  main gnome keybindings
+  main gnome flatpaks
+}
