@@ -74,6 +74,7 @@ def "main wm" [] {
     "pipewire-gstreamer"
     "pipewire-pulse"
     "pipewire-pulseaudio"
+    "pipx"
     "playerctl"
     "qt5ct"
     "qt6-qtimageformats"
@@ -90,9 +91,10 @@ def "main wm" [] {
   ]
 
   log info "Installing pywal packages"
-  if not (has-cmd pipx) { si ["pipx"] }
-  ^pipx install pywal
-  ^pipx install pywalfox
+  do -i {
+    ^pipx install pywal
+    ^pipx install pywalfox
+  }
 
   let pictures = ($env.HOME | path join "Pictures")
   do -i { mkdir $"($pictures)/Screenshots" }
