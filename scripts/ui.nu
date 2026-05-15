@@ -92,8 +92,8 @@ def "main wm" [] {
 
   log info "Installing pywal packages"
   do -i {
-    ^pipx install pywal
-    ^pipx install pywalfox
+    pipx install pywal
+    pipx install pywalfox
   }
 
   let pictures = ($env.HOME | path join "Pictures")
@@ -123,8 +123,8 @@ def "main niri install" [] {
   }
 
   log info "Installing niri and dms"
-  # ^sudo dnf copr enable -y avengemedia/dms
-  ^sudo dnf copr enable -y yalter/niri
+  # sudo dnf copr enable -y avengemedia/dms
+  sudo dnf copr enable -y yalter/niri
   si ["niri" "dms" "cliphist" "material-symbols-fonts"]
 }
 
@@ -135,7 +135,7 @@ def "main niri config" [] {
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
   touch-files $niri_dms ["alttab.kdl" "colors.kdl" "layout.kdl" "wpblur.kdl" "binds.kdl" "cursor.kdl" "outputs.kdl"]
 
-  do -i { ^systemctl --user add-wants niri.service dms }
+  do -i { systemctl --user add-wants niri.service dms }
 }
 
 def "main niri" [] {
@@ -146,13 +146,13 @@ def "main niri" [] {
 def fpi [pkgs: list<string>] {
   for pkg in $pkgs {
     log info $"Installing ($pkg)"
-    do -i { ^flatpak --user install -y flathub $pkg }
+    do -i { flatpak --user install -y flathub $pkg }
   }
 }
 
 def "main flathub" [] {
   log info "Adding flathub remote"
-  ^flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
 }
 
 def "main flatpak" [] {

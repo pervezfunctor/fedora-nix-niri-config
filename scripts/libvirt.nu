@@ -16,12 +16,12 @@ def "libvirt config" [] {
   }
 
   log info "Enabling libvirtd service"
-  do -i { ^sudo systemctl enable --now libvirtd }
-  do -i { ^sudo virsh net-autostart default }
+  do -i { sudo systemctl enable --now libvirtd }
+  do -i { sudo virsh net-autostart default }
   log info "Enabling authselect with-libvirt feature"
   do -i {
     if (has-cmd authselect) {
-      ^sudo authselect enable-feature with-libvirt
+      sudo authselect enable-feature with-libvirt
     }
   }
 }

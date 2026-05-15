@@ -40,7 +40,7 @@ def "main rust" [] {
   }
 
   log info "Installing rustup"
-  ^curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   path add $"($env.HOME)/.cargo/bin"
 }
 
@@ -51,7 +51,7 @@ def "main uv" [] {
   }
 
   log info "Installing uv"
-  ^curl -LsSf https://astral.sh/uv/install.sh | sh
+  curl -LsSf https://astral.sh/uv/install.sh | sh
 
   if not (has-cmd pipx) {
     log info "Installing pipx"
@@ -90,7 +90,7 @@ def "main ai" [] {
 
   log info "Installing npm packages"
   for pkg in $npm_pkgs {
-    ^vp install -g $pkg
+    vp install -g $pkg
   }
 }
 

@@ -30,7 +30,7 @@ export def "main install" [] {
   }
 
   log info $"Initializing incus admin with ($incus_config)"
-  do -i { open --raw $incus_config | ^sg incus-admin -- incus admin init --preseed }
+  do -i { open --raw $incus_config | sg incus-admin -- incus admin init --preseed }
 
   log info "Incus configured. Reboot your system and use incus.nu script."
 }

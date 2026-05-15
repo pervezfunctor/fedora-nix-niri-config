@@ -4,7 +4,7 @@ use std/log
 use ./lib.nu *
 
 def readlink-target [path: string]: nothing -> string {
-  let result = (^readlink $path | complete)
+  let result = (readlink $path | complete)
   if $result.exit_code == 0 { $result.stdout | str trim } else { "" }
 }
 
@@ -26,7 +26,7 @@ def ensure-parent-dir [path: string] {
 }
 
 def resolved-symlink-target [path: string]: nothing -> string {
-  let result = (^readlink -f $path | complete)
+  let result = (readlink -f $path | complete)
   if $result.exit_code == 0 { $result.stdout | str trim } else { "" }
 }
 
@@ -64,11 +64,11 @@ def link [source: string, target: string] {
 
   if $exists {
     log warning $"Trashing existing ($target), restore with 'trash-restore'"
-    do -i { ^trash $target }
+    do -i { trash $target }
   }
 
   log info $"Linking ($src) -> ($target)"
-  ^ln -s $src $target
+  ln -s $src $target
 }
 
 def dotify-path [p: string]: nothing -> string {

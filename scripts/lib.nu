@@ -72,12 +72,12 @@ export def is-fedora []: nothing -> bool {
 }
 
 export def group-add [group: string] {
-  let groups_output = (^getent group | lines)
+  let groups_output = (getent group | lines)
   let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
 
   if $group in $group_names {
     log info $"adding user to group ($group)"
-    do -i { ^sudo usermod -aG $group $env.USER }
+    do -i { sudo usermod -aG $group $env.USER }
   } else {
     log warning $"($group) group not found, skipping"
   }
@@ -85,7 +85,7 @@ export def group-add [group: string] {
 
 export def si [packages: list<string>] {
   log info "Installing packages"
-  do -i { ^sudo dnf install -y ...$packages }
+  do -i { sudo dnf install -y ...$packages }
 }
 
 export def touch-files [dir: string, files: list<string>] {
@@ -118,7 +118,7 @@ export def --env bootstrap [] {
 
 export def update [] {
   log info "Updating packages"
-  ^sudo dnf update -y
+  sudo dnf update -y
 }
 
 export def check-commands [...cmds: string]: nothing -> bool {
@@ -147,13 +147,13 @@ export def brew-install [] {
     log info "brew is already installed"
     return
   }
-  ^sudo -v
+  sudo -v
   log info "Installing brew"
   http get "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" | bash
   path add "/home/linuxbrew/.linuxbrew/bin"
 
-  ^brew tap ublue-os/tap
-  ^brew install topgrade
+  brew tap ublue-os/tap
+  brew install topgrade
 }
 
 
@@ -161,7 +161,7 @@ export def get-pubkey [ssh_key: string] {
   if ($ssh_key | is-empty) {
     let pubkey_path = $"($env.HOME)/.ssh/id_ed25519.pub"
     if not ($pubkey_path | path exists) {
-      ^ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
+      ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
     }
     open $pubkey_path | str trim
   } else {

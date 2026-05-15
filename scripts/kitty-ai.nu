@@ -15,7 +15,7 @@ def main [
         let cwd = ($entry.cwd | path expand)
         let cmd = $entry.cmd
 
-        # ^bash -c $"kitty sh -c 'cd ($cwd) && ($cmd); exec $SHELL' & disown"
-        ^bash -c $"nohup kitty bash -lc 'cd ($cwd) && ($cmd); exec $SHELL' >/dev/null 2>&1 &"
+        # bash -c $"kitty sh -c 'cd ($cwd) && ($cmd); exec $SHELL' & disown"
+        bash -c $"nohup kitty bash -lc 'cd ($cwd) && ($cmd); exec $SHELL' >/dev/null 2>&1 &"
     }
 }

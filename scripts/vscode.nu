@@ -10,7 +10,7 @@ def "main vscode install" [] {
   if not (has-cmd code) {
     log info "Installing vscode"
     do -i {
-      ^sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+      sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
       let repo = ([
         "[code]"
@@ -22,8 +22,8 @@ def "main vscode install" [] {
         "gpgcheck=1"
         "gpgkey=https://packages.microsoft.com/keys/microsoft.asc"
       ] | str join "\n")
-      $repo | ^sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
-      ^dnf check-update
+      $repo | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+      dnf check-update
     }
     si ["code"]
   }
@@ -38,7 +38,7 @@ def "main vscode config" [] {
 
   log info "Installing vscode extensions"
   for ext in $extensions {
-    do -i { ^code --install-extension $ext }
+    do -i { code --install-extension $ext }
   }
 
   stow-config "Code"
