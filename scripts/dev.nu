@@ -5,8 +5,13 @@ use std/util "path add"
 use ./lib.nu *
 
 def "main docker" [] {
+  if (is-atomic) {
+    log error "Docker installation is not supported on atomic systems"
+    return
+  }
+
   log info "Installing docker..."
-  sudo dnf install -y docker docker-compose
+  si ["docker" "docker-compose"]
   sudo systemctl start docker
   sudo systemctl enable docker
   sudo usermod -aG docker $env.USER

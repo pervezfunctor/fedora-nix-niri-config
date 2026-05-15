@@ -29,6 +29,11 @@ def "main kitty" [] {
 }
 
 def "main wm" [] {
+  if (is-atomic) {
+    log info "wm/niri installation unsupported on atomic systems"
+    exit 1
+  }
+
   fonts
 
   log info "Installing window manager packages"

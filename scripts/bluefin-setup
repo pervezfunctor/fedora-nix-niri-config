@@ -61,6 +61,10 @@ help() {
 main() {
   export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$PATH"
 
+  if ! has_cmd ujust; then
+    die "This script should be run only on ublue dx systems(Bluefin, Bazzite etc)"
+  fi
+
   if [ ! $# -eq 0 ]; then
     case "$1" in
     help | --help | -h)

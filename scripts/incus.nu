@@ -6,6 +6,11 @@ use ./lib.nu *
 const incus_config = path self incus.yml
 
 export def "main install" [] {
+  if (is-atomic) {
+    log error "incus installation is not supported on atomic systems"
+    return
+  }
+
   log info "Installing incus"
   si ["incus" "incus-tools"]
 

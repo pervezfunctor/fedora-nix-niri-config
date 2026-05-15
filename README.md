@@ -146,4 +146,10 @@ For development tools for Python, Web, Rust
 setup.nu dev
 ```
 
-I personally don't use vanilla fedora atomic distributions anymore. Above scripts might not work on Silverblue for example.
+Above scripts might not work on fedora atomic systems, Silverblue for example.
+
+Shell setup with fish as default could be done by running the same bootstrap script.
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
+```

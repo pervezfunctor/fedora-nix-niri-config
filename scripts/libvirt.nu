@@ -59,6 +59,11 @@ Run without arguments to install libvirt."
 }
 
 def main [] {
+  if (is-atomic) {
+    log error "This script does not support atomic systems"
+    return
+  }
+
   main libvirt install
   main libvirt install
 }

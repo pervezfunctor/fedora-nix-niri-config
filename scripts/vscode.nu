@@ -49,5 +49,11 @@ def "main vscode" [] {
 }
 
 def main [] {
+  if (is-atomic) {
+    log error "vscode installation is not supported on atomic systems"
+    log info "Use brew to install vscode instead."
+    return
+  }
+
   main vscode
 }
