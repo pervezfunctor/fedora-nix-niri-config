@@ -2,6 +2,7 @@
 
 use ./lib.nu *
 use std/log
+use ./stow.nu stow-config
 
 def "main vscode install" [] {
   fonts
@@ -40,7 +41,7 @@ def "main vscode config" [] {
     do -i { ^code --install-extension $ext }
   }
 
-  stow "Code"
+  stow-config "Code"
 }
 
 def "main vscode" [] {

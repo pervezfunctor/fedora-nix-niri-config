@@ -2,6 +2,7 @@
 
 use std/log
 use ./lib.nu *
+use ./stow.nu stow-all
 
 def "main wallpapers" [] {
   let base = '~/.local/share/backgrounds' | path expand
@@ -25,7 +26,7 @@ def "main kitty" [] {
   }
 
   touch-files ~/.config/kitty ["local.conf", "dank-theme.conf", "dank-tabs.conf"]
-  stow "kitty"
+  stow-all "kitty"
 }
 
 def "main wm" [] {
@@ -98,8 +99,7 @@ def "main wm" [] {
   let pictures = ($env.HOME | path join "Pictures")
   do -i { mkdir $"($pictures)/Screenshots" }
 
-  stow "xdg-desktop-portal"
-  stow "alacritty"
+  stow-all "xdg-desktop-portal" "alacritty"
 }
 
 def "main greetd" [] {
@@ -130,8 +130,7 @@ def "main niri install" [] {
 
 def "main niri config" [] {
   log info "Setting up niri config"
-  stow "niri"
-  stow "fuzzel"
+  stow-all "niri" "fuzzel"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
   touch-files $niri_dms ["alttab.kdl" "colors.kdl" "layout.kdl" "wpblur.kdl" "binds.kdl" "cursor.kdl" "outputs.kdl"]

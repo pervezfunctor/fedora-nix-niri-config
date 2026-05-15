@@ -116,10 +116,16 @@ def main [package: string] {
   main config $package
 }
 
-export def "stow config" [package: string] {
+export def stow-all [...args: string] {
+  for arg in $args {
+    stow-config $arg
+  }
+}
+
+export def "stow-config" [package: string] {
   main config $package
 }
 
-export def "stow home" [package: string] {
+export def "stow-home" [package: string] {
   main home $package
 }

@@ -2,6 +2,7 @@
 
 use std/log
 use ./lib.nu *
+use ./stow.nu stow-all
 
 def "main dev" [...args] {
     nu ($env.FILE_PWD | path join "dev.nu") ...$args
@@ -40,7 +41,7 @@ def "main fonts" [] {
 }
 
 def "main stow" [...args: string] {
-    stow ...$args
+    stow-all ...$args
 }
 
 def "main help" [] {

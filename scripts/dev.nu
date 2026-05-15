@@ -3,6 +3,7 @@
 use std/log
 use std/util "path add"
 use ./lib.nu *
+use ./stow.nu stow-config
 
 def "main docker" [] {
   if (is-atomic) {
@@ -29,7 +30,7 @@ def "main zed" [] {
   log info "Installing zed"
   curl -f https://zed.dev/install.sh | sh
 
-  stow "zed"
+  stow-config "zed"
 }
 
 def "main rust" [] {
