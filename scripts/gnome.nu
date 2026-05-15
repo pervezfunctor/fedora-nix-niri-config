@@ -70,7 +70,7 @@ def "main settings" [] {
   gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
 
   if not (has-cmd dconf) {
-    log error "dconf not found, skipping gnome keybindings"
+    log error "dconf not found, skipping gnome settings"
     return
   }
 

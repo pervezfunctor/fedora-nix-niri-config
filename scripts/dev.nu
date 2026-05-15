@@ -55,10 +55,29 @@ def "main vp" [] {
 
   log info "Installing vp"
   curl -fsSL https://vite.plus | bash
+  path add $"($env.HOME)/.vite-plus/bin"
 
   log info "Installing node"
   ~/.vite-plus/bin/vp env install latest
-  path add $"($env.HOME)/.vite-plus/bin"
+}
+
+def "main ai" [] {
+  if not (has-cmd npm) {
+    main vp
+  }
+
+  let npm_pkgs = [
+    "@google/gemini-cli"
+    "@mermaid-js/mermaid-cli"
+    "opencode-ai"
+    "@openai/codex"
+    "@augmentcode/auggie"
+  ]
+
+  log info "Installing npm packages"
+  for pkg in $npm_pkgs {
+    ^vp install -g $pkg
+  }
 }
 
 def "main help" [] {
@@ -70,6 +89,7 @@ Commands:
   vp      Install vp \(Vite Plus\) and latest Node.js
   zed     Install and configure Zed editor
   docker  Install Docker and Docker Compose
+  ai      Install AI CLI tools
   help    Show this help message
 
 Run without arguments to install all \(rust, uv, vp\)."
@@ -79,4 +99,5 @@ def main [] {
   main rust
   main uv
   main vp
+  main ai
 }
