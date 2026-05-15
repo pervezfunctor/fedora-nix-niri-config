@@ -5,31 +5,26 @@ use std/util "path add"
 
 export def "log+" [msg: string] {
   let colored = $"(ansi green)📝 ($msg)(ansi reset)"
-  log info $colored
   print $colored
 }
 
 export def "warn+" [msg: string] {
   let colored = $"(ansi yellow) ⚠️ ($msg)(ansi reset)"
-  log warning $colored
   print $colored
 }
 
 export def "error+" [msg: string] {
   let colored = $"(ansi red)🚨 ($msg)(ansi reset)"
-  log error $colored
   print $colored
 }
 
 export def "success+" [msg: string] {
   let colored = $"(ansi green)✅ ($msg)(ansi reset)"
-  log info $colored
   print $colored
 }
 
 export def "failure+" [msg: string] {
   let colored = $"(ansi red)❌ ($msg)(ansi reset)"
-  log error $colored
   print $colored
 }
 

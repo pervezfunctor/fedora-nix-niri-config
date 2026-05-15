@@ -139,6 +139,8 @@ def "main keybindings" [] {
   dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
   dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
 
+  # gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
+
   # dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
   # dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
 }
@@ -148,7 +150,6 @@ def "main jetbrains mono" [] {
       log+ "JetBrains Mono Nerd Font already installed"
       return
     }
-
     log+ "Installing JetBrains Mono Nerd Font"
     mkdir ~/.local/share/fonts
     rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
@@ -205,7 +206,7 @@ def "main ptyxis" [] {
 
   gsettings set org.gnome.Ptyxis use-system-font false
   gsettings set org.gnome.Ptyxis font-name 'Cascadia Mono NF 12'
-  gsettings set org.gnome.Ptyxis interface-style 'dark'
+  gsettings set org.gnome.Ptyxis interface-style 'system'
 
   let profid = (
     gsettings get org.gnome.Ptyxis default-profile-uuid
@@ -232,6 +233,11 @@ def "main ptyxis" [] {
 }
 
 def "main packages" [] {
+  if (is-atomic) {
+    log info "Skipping package installation on atomic"
+    return
+  }
+
   log info "Installing packages..."
   do -i {
     si ["gnome-tweaks"]
