@@ -349,10 +349,10 @@ gnome_keybindings() {
   dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
   dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
 
-  gnome_create_shortcut "Terminal" "ptyxis -s" "<Super>Return"
-
   dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
   dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
+
+  # gnome-shortcut "Terminal" "ptyxis -s" "<Super>Return"
 }
 
 gnome_ptyxis() {
@@ -362,7 +362,7 @@ gnome_ptyxis() {
   gsettings set org.gnome.Ptyxis interface-style 'system'
 
   if fc-list : family 2>/dev/null | grep -qi 'jetbrains.*nerd'; then
-    gsettings set org.gnome.Ptyxis font-name 'JetbrainsMono Nerd Font 11'
+    gsettings set org.gnome.Ptyxis font-name 'JetBrainsMono Nerd Font 11'
   fi
 
   local profid
@@ -377,10 +377,15 @@ gnome_ptyxis() {
   fi
 }
 
-gnome_packages() {
+fonts_install() {
   has_cmd brew || brew_install
   log "Installing fonts..."
   brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+  fc-fc-cache -fv
+}
+
+gnome_packages() {
+  fonts_install
 
   if ! is_atomic; then
     log "Installing system packages..."
@@ -424,8 +429,8 @@ EOF
     gnome_flatpaks
     gnome_extensions
     gnome_settings
-    gnome_keybindings
     gnome_ptyxis
+    gnome_keybindings
     ;;
   *)
     error "Unknown command: $subcmd"
@@ -439,14 +444,12 @@ EOF
 #################
 
 cmd_dev_zed() {
-  if has_cmd "$HOME/.local/bin/zed"; then
-    log "zed is already installed"
-    return
+  if ! has_cmd "$HOME/.local/bin/zed"; then
+    log "Installing zed"
+    curl -f https://zed.dev/install.sh | sh
   fi
 
-  log "Installing zed"
-  curl -f https://zed.dev/install.sh | sh
-
+  fonts_install
   deploy_config "zed"
 }
 
@@ -461,13 +464,10 @@ cmd_dev_rust() {
 }
 
 cmd_dev_uv() {
-  if has_cmd uv; then
-    log "uv is already installed"
-    return
+  if ! has_cmd uv; then
+    log "Installing uv"
+    curl -LsSf https://astral.sh/uv/install.sh | sh
   fi
-
-  log "Installing uv"
-  curl -LsSf https://astral.sh/uv/install.sh | sh
 
   if ! has_cmd pipx; then
     log "Installing pipx"
@@ -558,6 +558,8 @@ cmd_vscode_install() {
 }
 
 cmd_vscode_config() {
+  fonts_install
+
   local extensions=(
     "Catppuccin.catppuccin-vsc"
     "mads-hartmann.bash-ide-vscode"
@@ -647,11 +649,14 @@ main() {
     cmd_dotfiles
   else
     case "$cmd" in
+    help | -h | --help)
+      print_help
+      return 0
+      ;;
     shell) cmd_shell ;;
     dotfiles) cmd_dotfiles ;;
     brew) cmd_brew ;;
     zed) cmd_zed ;;
-    help) print_help ;;
     gnome) cmd_gnome "${cmd_args[@]}" ;;
     dev) cmd_dev "${cmd_args[@]}" ;;
     vscode) cmd_vscode "${cmd_args[@]}" ;;
@@ -659,7 +664,7 @@ main() {
     *)
       error "Unknown command: $cmd"
       print_help
-      exit 1
+      return 1
       ;;
     esac
   fi
