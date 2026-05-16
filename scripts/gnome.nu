@@ -3,6 +3,39 @@
 use std/log
 use ./lib.nu *
 
+def fpi [pkgs: list<string>] {
+  for pkg in $pkgs {
+    log info $"Installing ($pkg)"
+    do -i { flatpak --user install -y flathub $pkg }
+  }
+}
+
+def "main flathub" [] {
+  if not (has-cmd flatpak) { si ["flatpak"] }
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+}
+
+def "main flatpaks" [] {
+  main flathub
+
+  let flatpaks = [
+    "com.github.tchx84.Flatseal"
+    "com.mattjakeman.ExtensionManager"
+    "org.gtk.Gtk3theme.adw-gtk3"
+    "org.gtk.Gtk3theme.adw-gtk3-dark"
+    "io.github.swordpuffin.rewaita"
+  ]
+
+  for pkg in $flatpaks {
+    do -i { flatpak --user install -y flathub $pkg }
+  }
+
+  do -i {
+    flatpak --user override --filesystem=xdg-config/gtk-3.0:rw
+    flatpak --user override --filesystem=xdg-config/gtk-4.0:rw
+  }
+}
+
 def "main extensions" [] {
   if not (has-cmd gext) {
     if not (has-cmd pipx) {
@@ -28,30 +61,6 @@ def "main extensions" [] {
   for ext in $extensions {
     do -i { gext install $ext }
     do -i { gext enable $ext }
-  }
-}
-
-def "main flatpaks" [] {
-  if not (has-cmd flatpak) {
-    log error "flatpak not found, skipping gnome flatpaks"
-    return
-  }
-
-  ui.nu flathub
-
-  let flatpaks = [
-    "com.mattjakeman.ExtensionManager"
-    "org.gtk.Gtk3theme.adw-gtk3"
-    "org.gtk.Gtk3theme.adw-gtk3-dark"
-    "io.github.swordpuffin.rewaita"
-  ]
-  for pkg in $flatpaks {
-    do -i { flatpak --user install -y flathub $pkg }
-  }
-
-  do -i {
-    flatpak --user override --filesystem=xdg-config/gtk-3.0:rw
-    flatpak --user override --filesystem=xdg-config/gtk-4.0:rw
   }
 }
 
@@ -157,54 +166,6 @@ def "main keybindings" [] {
   # dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
 }
 
-def "main jetbrains mono" [] {
-    if (fc-list | lines | where $it =~ "(?i)jetbrains.*nerd" | is-not-empty) {
-      log+ "JetBrains Mono Nerd Font already installed"
-      return
-    }
-    log+ "Installing JetBrains Mono Nerd Font"
-    mkdir ~/.local/share/fonts
-    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
-    wget -nv https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip -O /tmp/jetbrains-mono.zip
-    unzip -qq -d /tmp/jetbrains-mono -o /tmp/jetbrains-mono.zip
-    glob "/tmp/jetbrains-mono/*.ttf" | each { |f| cp $f ~/.local/share/fonts/ }
-    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
-    log+ "JetBrains Mono Nerd Font installation done!"
-}
-
-def "main jetbrains mono fix" [] {
-  grep -rlF 'Cascadia Mono NF' .
-  | lines
-  | each {|f| sed -i 's/Cascadia Mono NF/JetBrainsMono Nerd Font/g' $f }
-}
-
-def "main help" [] {
-  print $"Usage: gnome.nu <command>
-  Available commands:
-  extensions     Install GNOME extensions\(paperwm etc\)
-  packages       Install GNOME packages
-  settings       Configure GNOME settings
-  keybindings    Configure GNOME keybindings
-  flatpaks       Manage GNOME flatpaks
-  ptyxis         Configure Ptyxis terminal
-  jetbrains mono Install JetBrains Mono Nerd Font
-  help           Show this help message
-  "
-}
-
-def is-flatpak [name: string] {
-  (flatpak list --columns=application | str contains $name)
-}
-
-def "font exists" [font_name: string] {
-  (fc-list : family
-  | lines
-  | each {|line| $line | split row "," }
-  | flatten
-  | each {|name| $name | str trim }
-  | any {|name| $name == $font_name })
-}
-
 def "main ptyxis" [] {
   if not (has-cmd gsettings) {
     log error "gsettings not found, skipping Ptyxis configuration"
@@ -214,22 +175,14 @@ def "main ptyxis" [] {
     log error "dconf not found, skipping Ptyxis configuration"
     return
   }
-  if not (has-cmd ptyxis) and not (is-flatpak "org.gnome.Ptyxis") {
-    log info "ptyxis not found, Installing..."
-    if (is-atomic) {
-      fpi "org.gnome.Ptyxis"
-    } else {
-      si ["ptyxis"]
-    }
-  }
 
   log info "Configuring Ptyxis"
 
   gsettings set org.gnome.Ptyxis use-system-font false
   gsettings set org.gnome.Ptyxis interface-style 'system'
 
-  if (font exists 'Cascadia Mono NF') {
-    gsettings set org.gnome.Ptyxis font-name 'Cascadia Mono NF 11'
+  if (font exists 'JetbrainsMono Nerd Font') {
+    gsettings set org.gnome.Ptyxis font-name 'JetbrainsMono Nerd Font 11'
   } else if (font exists '') {
     gsettings set org.gnome.Ptyxis font-name ''
   }
@@ -246,24 +199,11 @@ def "main ptyxis" [] {
   if (is-atomic) {
     gsettings set $profile custom-command '/usr/bin/fish'
   }
-
-  # is flatpak
-  # let profid = (
-  #   flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #     get org.gnome.Ptyxis default-profile-uuid
-  #   | str trim --char "'"
-  # )
-
-  # flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
-  #   opacity 0.85
-
-  # flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
-  #   palette "Everforest"
 }
 
 def "main packages" [] {
+  brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+
   if (is-atomic) {
     log info "Skipping package installation on atomic"
     return
@@ -275,12 +215,74 @@ def "main packages" [] {
   }
 }
 
+def "main help" [] {
+  print $"Usage: gnome.nu <command>
+  Available commands:
+  packages       Install GNOME packages
+  flatpaks       Manage GNOME flatpaks
+  extensions     Install GNOME extensions\(paperwm etc\)
+  settings       Configure GNOME settings
+  keybindings    Configure GNOME keybindings
+  ptyxis         Configure Ptyxis terminal
+  help           Show this help message
+  "
+}
+
 def "main" [] {
-  fonts
   main packages
+  main flatpaks
   main extensions
   main settings
   main keybindings
-  main flatpaks
   main ptyxis
 }
+
+# def "main jetbrains mono" [] {
+#     if (fc-list | lines | where $it =~ "(?i)jetbrains.*nerd" | is-not-empty) {
+#       log+ "JetBrains Mono Nerd Font already installed"
+#       return
+#     }
+#     log+ "Installing JetBrains Mono Nerd Font"
+#     mkdir ~/.local/share/fonts
+#     rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
+#     wget -nv https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip -O /tmp/jetbrains-mono.zip
+#     unzip -qq -d /tmp/jetbrains-mono -o /tmp/jetbrains-mono.zip
+#     glob "/tmp/jetbrains-mono/*.ttf" | each { |f| cp $f ~/.local/share/fonts/ }
+#     rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
+#     log+ "JetBrains Mono Nerd Font installation done!"
+# }
+
+# def "main jetbrains mono fix" [] {
+#   grep -rlF 'Cascadia Mono NF' .
+#   | lines
+#   | each {|f| sed -i 's/Cascadia Mono NF/JetBrainsMono Nerd Font/g' $f }
+# }
+
+# def is-flatpak [name: string] {
+#   (flatpak list --columns=application | str contains $name)
+# }
+
+# def "font exists" [font_name: string] {
+#   (fc-list : family
+#   | lines
+#   | each {|line| $line | split row "," }
+#   | flatten
+#   | each {|name| $name | str trim }
+#   | any {|name| $name == $font_name })
+# }
+
+
+# is flatpak
+# let profid = (
+#   flatpak run --command=gsettings app.devsuite.Ptyxis \
+#     get org.gnome.Ptyxis default-profile-uuid
+#   | str trim --char "'"
+# )
+
+# flatpak run --command=gsettings app.devsuite.Ptyxis \
+#   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
+#   opacity 0.85
+
+# flatpak run --command=gsettings app.devsuite.Ptyxis \
+#   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
+#   palette "Everforest"

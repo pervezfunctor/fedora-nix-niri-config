@@ -4,6 +4,12 @@ use std/log
 use std/util "path add"
 use std/util *
 
+export-env {
+  if "DOT_DIR" not-in ($env | columns) {
+    $env.DOT_DIR = ($env.HOME | path join ".fedora-config")
+  }
+}
+
 export def "log+" [msg: string] {
   let colored = $"(ansi green)📝 ($msg)(ansi reset)"
   print $colored
@@ -27,12 +33,6 @@ export def "success+" [msg: string] {
 export def "failure+" [msg: string] {
   let colored = $"(ansi red)❌ ($msg)(ansi reset)"
   print $colored
-}
-
-export-env {
-  if "DOT_DIR" not-in ($env | columns) {
-    $env.DOT_DIR = ($env.HOME | path join ".fedora-config")
-  }
 }
 
 export def is-atomic []: nothing -> bool {

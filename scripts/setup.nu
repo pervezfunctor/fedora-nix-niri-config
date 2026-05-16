@@ -4,40 +4,24 @@ use std/log
 use ./lib.nu *
 use ./stow.nu stow-all
 
-def "main dev" [...args] {
-    nu ($env.FILE_PWD | path join "dev.nu") ...$args
+def "main shell" [...args] {
+  nu ($env.FILE_PWD | path join "shell.nu") ...$args
 }
 
-def "main ui" [...args] {
-    nu ($env.FILE_PWD | path join "ui.nu") ...$args
+def "main gnome" [...args] {
+    nu ($env.FILE_PWD | path join "gnome.nu") ...$args
+}
+
+def "main dev" [...args] {
+    nu ($env.FILE_PWD | path join "dev.nu") ...$args
 }
 
 def "main vscode" [...args] {
     nu ($env.FILE_PWD | path join "vscode.nu") ...$args
 }
 
-def "main libvirt" [...args] {
-    nu ($env.FILE_PWD | path join "libvirt.nu") ...$args
-}
-
-def "main niri" [] {
-    main ui niri
-}
-
-def "main apps" [] {
-    main ui apps
-}
-
-def "main brew" [] {
-    brew-install
-}
-
 def "main zed" [] {
     main dev zed
-}
-
-def "main fonts" [] {
-    fonts
 }
 
 def "main stow" [...args: string] {
@@ -48,14 +32,11 @@ def "main help" [] {
     print $"Usage: setup.nu <command> [args...]
 
 Commands:
-  niri              Install and configure niri
-  apps              Install apps like zen browser, obsidian, papers
+  shell             Shell tools and fish setup
+  gnome             Use gnome with scrolling layout similar to niri
   dev               Development tools \(rust, uv, vp\)
   zed               Install and configure Zed editor
   vscode            Install and configure vscode
-  libvirt           Install and configure libvirt/virt-manager
-  brew              Install Homebrew
-  fonts             Install fonts
   stow              Stow dotfiles
 
   help               Show this help message

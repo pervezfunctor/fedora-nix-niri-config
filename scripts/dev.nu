@@ -5,20 +5,6 @@ use std/util "path add"
 use ./lib.nu *
 use ./stow.nu stow-config
 
-def "main docker" [] {
-  if (is-atomic) {
-    log error "Docker installation is not supported on atomic systems"
-    return
-  }
-
-  log info "Installing docker..."
-  si ["docker" "docker-compose"]
-  sudo systemctl start docker
-  sudo systemctl enable docker
-  sudo usermod -aG docker $env.USER
-  log info "Docker installed successfully"
-}
-
 def "main zed" [] {
   if (has-cmd ~/.local/bin/zed) {
     log info "zed is already installed"
@@ -102,7 +88,6 @@ Commands:
   uv      Install uv \(Python package manager\)
   vp      Install vp \(Vite Plus\) and latest Node.js
   zed     Install and configure Zed editor
-  docker  Install Docker and Docker Compose
   ai      Install AI CLI tools
   help    Show this help message
 

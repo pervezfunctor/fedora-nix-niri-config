@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# trap 'echo "Error on line $LINENO: $BASH_COMMAND"' ERR
+trap 'echo "ERROR rc=$? line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
+
+readonly REPO_NAME="fedora-config"
+readonly DOT_DIR="$HOME/.${REPO_NAME}"
+
+log() {
+  printf "\033[1;34m🚀 %s\033[0m\n" "$*"
+}
+
+error() {
+  printf "\033[1;31m🔥 %s\033[0m\n" "$*" >&2
+}
+
+die() {
+  error "$*"
+  exit 1
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+dotfiles_install() {
+  [ -d "$DOT_DIR" ] && return
+
+  has_cmd git || die "git is not installed. Quitting."
+
+  log "Cloning dotfiles..."
+  git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" || die "git clone failed"
+  log "dotfiles installation done!"
+}
+
+is_silverblue() {
+  [ -f /etc/os-release ] || return 1
+
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  [[ "${ID:-}" =~ .*[Ss]ilverblue.* ]] || [[ "${PRETTY_NAME:-}" =~ .*[Ss]ilverblue.* ]]
+}
+
+is_bluefin() {
+  [ -f /etc/os-release ] || return 1
+
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  [[ "${ID,,}" =~ .*bluefin.* ]] || [[ "${PRETTY_NAME,,}" =~ .*bluefin.* ]] || [[ "${NAME,,}" =~ .*bluefin.* ]]
+}
+
+brew_install() {
+  has_cmd brew && return 0
+
+  if is_silverblue; then
+    ~/.fedora-config/scripts/homebrew-atomic
+  else
+    log "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    log "Homebrew installation done!"
+  fi
+
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+}
+
+main() {
+  export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$PATH"
+
+  dotfiles_install
+  brew_install
+  brew tap ublue-os/tap
+  brew install nushell
+}
+
+main "$@"

@@ -5,10 +5,18 @@
 Run the following bootstrap script
 
 ```sh
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/setup)"
 ```
 
-This script clones this repo to `~/.fedora-config`, installs pixi and installs fish as your default shell.
+This script clones this repo to `~/.fedora-config`, installs brew and nushell.
+
+## Shell
+
+Restart your terminal and execute the following script to install shell tools and setup fish as default shell(on non atomic fedora).
+
+```sh
+~/.fedora-config/scripts/setup.nu shell
+```
 
 Reboot your computer and open terminal. You should be in fish shell.
 
@@ -73,50 +81,28 @@ For additional commands
 incus.nu help
 ```
 
-## Niri setup
+## Gnome setup
 
-Currently this repository uses latest versions of niri and dms using copr packages(by the creators of niri and dms). Installation might break occasionally. So use this with caution.
+To setup gnome, and use scrolling layout(paperwm), use the following script
 
 ```sh
-setup.nu niri
+setup.nu gnome
 ```
-
-It's extremely important that you open dms settings from the top bar and at least change
-
-- Power settings(monitor and system sleep)
-- Wallpaper
-- Theme
-- Default fonts
-- Time and weather
-- Display Configuration(monitor resolutions)
-
-Most of your desktop configuration should be there and this repository does not set them.
-
-All your keybindings will be in ~/.config/niri/config/binds.kdl. You could also list all keybindings with "Super+Shift+/" keybinding.
 
 Some important keybindings
 
 - Open Terminal - Super+Return
-- Application Launcher - Super+D
 - Pick Predefined Size - Super+R (This is super important)
 - Center Window - Super+C (Super important)
-- Overview - Super+O (Super important)
 - Close Window - Super+Q
 - Switch Focus - Super+<Arrow Key>
 - Move Window - Super+Shift+<Arrow Key>
-- Switch Workspace - Super+<Number>
-- Move Window to Workspace - Super+Shift
-
-##S Miscellaneous
-
-```sh
-setup.nu apps         # install obsidian and other flatpak apps
-setup.nu libvirt      # install and configure libvirt
-```
+- Switch Workspace - Super+Page_Up/Page_Down
+- Move Window to Workspace - Super+Shift+Page_Up/Page_Down
 
 ## Bluefin
 
-Few of the scripts(not all) from this repository should work on bluefin too.
+Most of the scripts(not all) from this repository should work on bluefin too.
 
 First switch to devmode
 
@@ -124,32 +110,10 @@ First switch to devmode
 ujust devmode
 ```
 
-Restart computer and setup dev groups
+Restart computer and setup dev groups.
 
 ```sh
 ujust dx-group
 ```
 
-You need to restart again. After restarting run the following script to setup bluefin.
-
-```sh
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/bluefin-setup)"
-```
-
-Restart your system, and set fish as your shell in your `ptyxis` default profile settings.
-
-You should have `incus`, `vscode`, `virt-manager` installed(bluefin dx mode).
-
-For development tools for Python, Web, Rust
-
-```sh
-setup.nu dev
-```
-
-Above scripts might not work on fedora atomic systems, Silverblue for example.
-
-Shell setup with fish as default could be done by running the same bootstrap script.
-
-```sh
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/fedora-setup)"
-```
+Restart your computer again. You should have `incus`, `libvirt` and `vscode` installed.
