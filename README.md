@@ -2,13 +2,21 @@
 
 ## Bootstrap
 
-Run the following bootstrap script
+First, update your system and reboot your computer. This will save a lot of time, when executing the following scripts.
+
+```sh
+sudo dnf update -y --refresh # fedora workstation
+ujust update # bluefin
+sudo rpm-ostree upgrade # silverblue
+```
+
+Then run the following bootstrap script
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/setup)"
 ```
 
-This script clones this repo to `~/.fedora-config`, and add a single line to your ~/.bashrc.
+This script clones this repo to `~/.fedora-config`, and add a single line to your ~/.bashrc to put all scripts on PATH.
 
 ## Shell
 
