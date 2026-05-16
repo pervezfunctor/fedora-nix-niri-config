@@ -51,11 +51,13 @@ is_fedora() {
 }
 
 dotfiles_install() {
-  [ -d "$DOT_DIR" ] && return
+  if [ -d "$DOT_DIR" ]; then
+    log "$DOT_DIR already exists. Skipping."
+  fi
 
   has_cmd git || {
     is_atomic && die "git is not installed. Quitting."
-    sudo dnf update -y --refresh
+    log "Installing git..."
     sudo dnf install -y git-core
   }
   has_cmd git || die "git is not installed. Quitting."
@@ -194,6 +196,9 @@ shell_packages_install() {
   if is_atomic; then
     pixi global install "${COMMON_PACKAGES[@]}"
   else
+    log "Updating packages..."
+    sudo dnf update -y --refresh
+
     log "Installing system dependencies..."
     sudo dnf install -y git which curl wget tar gcc less libatomic make pipx plocate zip unzip zstd "${COMMON_PACKAGES[@]}"
     sudo updatedb 2>/dev/null || true
@@ -618,9 +623,13 @@ EOF
 cmd_dotfiles() {
   dotfiles_install
 
-  if [ -f "$HOME/.bashrc" ]; then
-    grep -qF 'source ~/.fedora-config/bash/bashrc' "$HOME/.bashrc" ||
-      echo 'source ~/.fedora-config/bash/bashrc' >>"$HOME/.bashrc"
+  [ -f "$HOME/.bashrc" ] || touch ~/.bashrc
+
+  if ! grep -qF 'source ~/.fedora-config/bash/bashrc' "$HOME/.bashrc"; then
+    log "Updating ~/.bashrc..."
+    echo 'source ~/.fedora-config/bash/bashrc' >>"$HOME/.bashrc"
+  else
+    log "$HOME/.bashrc already updated."
   fi
 }
 
