@@ -104,13 +104,6 @@ dotfiles_install() {
 fish_install() {
   log "Configuring fish shell..."
 
-  log "Trashing existing config.fish...(use trash-restore to restore)"
-  trash ~/.config/fish/config.fish || true
-
-  log "Linking ($DOT_DIR/fish/config.fish) -> ($HOME/.config/fish/config.fish)"
-  mkdir -p ~/.config/fish 2>/dev/null || true
-  ln -sf "${DOT_DIR}/fish/config.fish" "${HOME}/.config/fish/config.fish"
-
   log "Setting fish as default shell..."
   if sudo chsh -s "$(which fish)" "$USER"; then
     log "Successfully set fish as default shell"
@@ -121,6 +114,9 @@ fish_install() {
 
   log "Installing carapace..."
   curl termux.carapace.sh | sh
+
+  log "Deploying fish config..."
+  "$DOT_DIR/scripts/setup" deploy fish
 }
 
 docker_install() {
@@ -130,21 +126,57 @@ docker_install() {
   sudo usermod -aG docker "$USER"
 }
 
+help() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTION]...
+
+Setup Fedora Tumbleweed with dotfiles and tools.
+
+Options:
+  -h, --help     Show this help message
+
+Commands:
+  (no args)      Run full setup (system packages, dotfiles, fish)
+  system         Install system packages only
+  dotfiles       Clone dotfiles repository only
+  fish           Configure fish shell only
+  docker         Install and configure Docker only
+
+Examples:
+  $(basename "$0")              # Full setup
+  $(basename "$0") system fish  # Install system packages and configure fish
+EOF
+}
+
 main() {
   has_cmd zypper || die "Only Tumbleweed is supported. Quitting."
 
-  if [ ! $# -eq 0 ]; then
-    for arg in "$@"; do
-      "${arg}_install" || true
-    done
+  if [ $# -eq 0 ]; then
+    log "Starting tumbleweed shell setup..."
+    system_install
+    dotfiles_install
+    fish_install
+    log "tumbleweed installation complete."
     return
   fi
 
-  log "Starting tumbleweed shell setup..."
-  system_install
-  dotfiles_install
-  fish_install
-  log "tumbleweed installation complete."
+  for arg in "$@"; do
+    case "$arg" in
+    -h | --help | help)
+      help
+      return
+      ;;
+    *)
+      if declare -f "${arg}_install" >/dev/null; then
+        "${arg}_install" || true
+      else
+        error "Unknown command: $arg"
+        help
+        return 1
+      fi
+      ;;
+    esac
+  done
 }
 
 main "$@"

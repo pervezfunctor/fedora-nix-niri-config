@@ -1,13 +1,11 @@
 export DOT_DIR="$HOME/.fedora-config"
-
-if [ -z "$XDG_DATA_DIRS" ]; then
-  export XDG_DATA_DIRS="/usr/local/share:/usr/share"
-fi
-export XDG_DATA_DIRS="$HOME/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
-
-export PATH="$HOME/.local/share/flatpak/exports/bin:$DOT_DIR/scripts:$HOME/bin:$HOME/.pixi/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.local/share/flatpak/exports/bin:$DOT_DIR/scripts:$HOME/.vite-plus/bin:$HOME/bin:$HOME/.pixi/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 if ! [[ $- == *i* ]]; then
+  return
+fi
+
+if command -v rpm-ostree 2>&1; then
   return
 fi
 

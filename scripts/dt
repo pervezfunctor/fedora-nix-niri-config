@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BOXES_DIR="$HOME/.boxes"
+
+log_info() {
+  echo -e "\033[32m[INFO]\033[0m $*"
+}
+
+log_error() {
+  echo -e "\033[31m[ERROR]\033[0m $*" >&2
+}
+
+prompt_yn() {
+  local prompt="$1"
+  local default="${2:-n}"
+  local response
+
+  while true; do
+    if [[ "$default" == "y" ]]; then
+      read -rp "$prompt [Y/n] " response
+    else
+      read -rp "$prompt [y/N] " response
+    fi
+
+    case "${response,,}" in
+    y | yes) return 0 ;;
+    n | no) return 1 ;;
+    "") [[ "$default" == "y" ]] && return 0 || return 1 ;;
+    esac
+  done
+}
+
+require_distrobox() {
+  if ! command -v distrobox &>/dev/null; then
+    log_error "distrobox is not installed. Run 'dt install' first."
+    exit 1
+  fi
+}
+
+cmd_install() {
+  log_info "Installing podman and distrobox"
+
+  if command -v rpm-ostree &>/dev/null; then
+    curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh -s -- --prefix ~/.local
+  else
+    sudo dnf install -y podman distrobox
+  fi
+}
+
+cmd_create() {
+  local image=""
+  local container_name=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --image)
+      image="$2"
+      shift 2
+      ;;
+    *)
+      container_name="$1"
+      shift
+      ;;
+    esac
+  done
+
+  local name="${container_name:-default}"
+  local dir="$BOXES_DIR/$name"
+
+  if [[ -z "$image" ]]; then
+    log_error "--image is required for create"
+    return 1
+  fi
+
+  if [[ -d "$dir" ]]; then
+    echo "Directory $dir already exists. Skipping creation."
+  else
+    mkdir -p "$BOXES_DIR"
+    distrobox create --home "$dir" --name "$name" --image "$image"
+  fi
+}
+
+cmd_enter() {
+  if [[ -z "${1:-}" ]]; then
+    log_error "container name is required"
+    return 1
+  fi
+  distrobox enter "$1" -nw --clean-path
+}
+
+cmd_fedora() {
+  local name="${1:-fedora}"
+  cmd_create --image "quay.io/fedora/fedora-toolbox:44" "$name"
+}
+
+cmd_arch() {
+  local name="${1:-arch}"
+  cmd_create --image "quay.io/toolbx/arch-toolbox:latest" "$name"
+}
+
+cmd_ubuntu() {
+  local name="${1:-ubuntu}"
+  cmd_create --image "quay.io/toolbx/ubuntu-toolbox:26.04" "$name"
+}
+
+cmd_debian() {
+  local name="${1:-debian}"
+  cmd_create --image "quay.io/toolbx-images/debian-toolbox:13" "$name"
+}
+
+cmd_tumbleweed() {
+  local name="${1:-tumbleweed}"
+  cmd_create --image "quay.io/toolbx-images/opensuse-toolbox:tumbleweed" "$name"
+}
+
+cmd_delete() {
+  if [[ -z "${1:-}" ]]; then
+    log_error "container name is required"
+    return 1
+  fi
+  local name="$1"
+  local dir="$BOXES_DIR/$name"
+
+  log_info "Deleted container: $name"
+  distrobox rm -y "$name"
+
+  if prompt_yn "Trash directory $dir?"; then
+    log_info "Trashed container directory: $dir"
+    trash "$dir"
+  fi
+}
+
+cmd_list() {
+  distrobox list
+}
+
+cmd_help() {
+  cat <<'EOF'
+Usage: dt <command> [options]
+
+Commands:
+  install           Install podman and distrobox
+  create            Create a new distrobox container
+  enter             Enter a distrobox container
+  debian            Create a Debian 13 container
+  fedora            Create a Fedora 44 container
+  ubuntu            Create an Ubuntu 26.04 container
+  tumbleweed        Create an openSUSE Tumbleweed container
+  arch              Create an Arch container
+  delete            Delete a container and trash its home directory
+  list              List all distrobox containers
+
+Options:
+  --image <string>  Image to use for create (required for create)
+  --help, -h        Show this help message
+
+Run 'dt <command> --help' for more information on a command.
+EOF
+}
+
+case "${1:-help}" in
+install)
+  cmd_install
+  ;;
+help | --help | -h)
+  cmd_help
+  ;;
+*)
+  require_distrobox
+  case "$1" in
+  create)
+    shift
+    cmd_create "$@"
+    ;;
+  enter)
+    cmd_enter "${2:-}"
+    ;;
+  fedora)
+    cmd_fedora "${2:-}"
+    ;;
+  arch)
+    cmd_arch "${2:-}"
+    ;;
+  ubuntu)
+    cmd_ubuntu "${2:-}"
+    ;;
+  debian)
+    cmd_debian "${2:-}"
+    ;;
+  tumbleweed)
+    cmd_tumbleweed "${2:-}"
+    ;;
+  delete)
+    cmd_delete "${2:-}"
+    ;;
+  list)
+    cmd_list
+    ;;
+  *)
+    cmd_help
+    ;;
+  esac
+  ;;
+esac

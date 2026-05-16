@@ -1,0 +1,37 @@
+gnome_create_shortcut() {
+  local name="$1"
+  local command="$2"
+  local shortcut="$3"
+
+  local schema="org.gnome.settings-daemon.plugins.media-keys"
+  local binding_prefix="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
+
+  local existing
+  existing="$(gsettings get "$schema" custom-keybindings | tr -d "[:space:]")"
+
+  local bindings=()
+  if [ "$existing" != "@as[]" ]; then
+    IFS=',' read -ra bindings <<<"$(echo "$existing" | tr -d "[]'" | tr -d ' ')"
+  fi
+
+  local new_index=${#bindings[@]}
+  local new_binding="${binding_prefix}custom${new_index}/"
+
+  bindings+=("$new_binding")
+
+  local formatted_list="["
+  for i in "${!bindings[@]}"; do
+    if [ "$i" -gt 0 ]; then
+      formatted_list+=", "
+    fi
+    formatted_list+="'${bindings[$i]}'"
+  done
+  formatted_list+="]"
+
+  gsettings set "$schema" custom-keybindings "$formatted_list"
+  gsettings set "${schema}.custom-keybinding:${new_binding}" name "$name"
+  gsettings set "${schema}.custom-keybinding:${new_binding}" command "$command"
+  gsettings set "${schema}.custom-keybinding:${new_binding}" binding "$shortcut"
+
+  log "Created: $name → $command [$shortcut]"
+}

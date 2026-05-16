@@ -2,7 +2,6 @@
 
 set -Eeuo pipefail
 
-# trap 'echo "Error on line $LINENO: $BASH_COMMAND"' ERR
 trap 'echo "ERROR rc=$? line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
 
 readonly REPO_NAME="fedora-config"
@@ -25,16 +24,6 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-dotfiles_install() {
-  [ -d "$DOT_DIR" ] && return
-
-  has_cmd git || die "git is not installed. Quitting."
-
-  log "Cloning dotfiles..."
-  git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" || die "git clone failed"
-  log "dotfiles installation done!"
-}
-
 is_silverblue() {
   [ -f /etc/os-release ] || return 1
 
@@ -51,27 +40,629 @@ is_bluefin() {
   [[ "${ID,,}" =~ .*bluefin.* ]] || [[ "${PRETTY_NAME,,}" =~ .*bluefin.* ]] || [[ "${NAME,,}" =~ .*bluefin.* ]]
 }
 
+is_atomic() {
+  is_silverblue || is_bluefin
+}
+
+is_fedora() {
+  has_cmd dnf || return 1
+  [ -f /etc/redhat-release ] || return 1
+  grep -qi fedora /etc/redhat-release
+}
+
+dotfiles_install() {
+  [ -d "$DOT_DIR" ] && return
+
+  has_cmd git || {
+    is_atomic && die "git is not installed. Quitting."
+    sudo dnf update -y --refresh
+    sudo dnf install -y git-core
+  }
+  has_cmd git || die "git is not installed. Quitting."
+
+  log "Cloning dotfiles..."
+  git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" || die "git clone failed"
+  log "dotfiles installation done!"
+}
+
 brew_install() {
   has_cmd brew && return 0
 
+  log "Installing Homebrew..."
   if is_silverblue; then
-    ~/.fedora-config/scripts/homebrew-atomic
+    "$DOT_DIR/scripts/homebrew-atomic"
   else
-    log "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    log "Homebrew installation done!"
+    has_cmd curl || die "curl not installed, quitting."
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
 
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 }
 
-main() {
-  export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$PATH"
+pixi_install() {
+  if has_cmd pixi; then
+    return 0
+  fi
+  has_cmd curl || die "curl is not installed. Quitting."
 
+  log "Installing pixi."
+  curl -fsSL https://pixi.sh/install.sh | sh
+}
+
+# Deploy helpers
+
+ensure_parent_dir() {
+  mkdir -p "$(dirname "$1")" 2>/dev/null || true
+}
+
+copy_file() {
+  local src="$1"
+  local target="$2"
+
+  if [ ! -f "$src" ]; then
+    error "Skipping: $src is not a file"
+    return
+  fi
+
+  if [ -d "$target" ]; then
+    error "Skipping: $target is a directory"
+    return
+  fi
+
+  ensure_parent_dir "$target"
+
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    log "Trashing existing $target, restore with 'trash-restore'"
+    trash "$target" 2>/dev/null || true
+  fi
+
+  log "Copying $src -> $target"
+  cp "$src" "$target"
+}
+
+copy_all() {
+  local root="$1"
+  local target_root="$2"
+
+  while IFS= read -r -d '' f; do
+    local rel="${f#"$root"/}"
+    copy_file "$f" "$target_root/$rel"
+  done < <(find "$root" -type f -print0)
+}
+
+deploy_config() {
+  copy_all "$DOT_DIR/$1" "$HOME/.config/$1"
+}
+
+###################
+### Shell setup ###
+###################
+
+fish_install() {
+  local fish_path
+  fish_path="$(command -v fish)"
+  if [ -z "$fish_path" ]; then
+    error "fish executable not found"
+    return
+  fi
+
+  if ! grep -qxF "$fish_path" /etc/shells 2>/dev/null; then
+    log "Adding fish to /etc/shells..."
+    echo "$fish_path" | sudo tee -a /etc/shells >/dev/null
+  fi
+
+  log "Setting fish as default shell..."
+  if sudo chsh -s "$fish_path" "$USER" 2>/dev/null; then
+    log "Successfully set fish as default shell"
+  else
+    error "Failed to set fish as default shell"
+    log "Run 'sudo chsh -s $fish_path $USER' to set it manually"
+  fi
+
+  deploy_config "fish"
+}
+
+readonly COMMON_PACKAGES=(
+  bat
+  difftastic
+  duf
+  eza
+  fd
+  fish
+  fzf
+  gdu
+  gh
+  gum
+  htop
+  jq
+  micro
+  rclone
+  ripgrep
+  rsync
+  shellcheck
+  tealdeer
+  tmux
+  trash-cli
+  ugrep
+  yq
+  zoxide
+)
+
+shell_packages_install() {
+  has_cmd pixi || pixi_install
+
+  if is_atomic; then
+    pixi global install "${COMMON_PACKAGES[@]}"
+  else
+    log "Installing system dependencies..."
+    sudo dnf install -y git which curl wget tar gcc less libatomic make pipx plocate zip unzip zstd "${COMMON_PACKAGES[@]}"
+    sudo updatedb 2>/dev/null || true
+  fi
+
+  pixi global install sd starship carapace go-shfmt
+
+  tldr --update 2>/dev/null || true
+  log "packages installation done!"
+}
+
+cmd_shell() {
+  shell_packages_install
+  fish_install
+}
+
+###################
+### GNOME setup ###
+###################
+
+fpi() {
+  for pkg in "$@"; do
+    log "Installing $pkg"
+    flatpak --user install -y flathub "$pkg" 2>/dev/null || true
+  done
+}
+
+gnome_flathub() {
+  has_cmd flatpak || sudo dnf install -y flatpak
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+}
+
+gnome_flatpaks() {
+  gnome_flathub
+
+  local flatpaks=(
+    "com.github.tchx84.Flatseal"
+    "com.mattjakeman.ExtensionManager"
+    "org.gtk.Gtk3theme.adw-gtk3"
+    "org.gtk.Gtk3theme.adw-gtk3-dark"
+    "io.github.swordpuffin.rewaita"
+  )
+
+  for pkg in "${flatpaks[@]}"; do
+    flatpak --user install -y flathub "$pkg" 2>/dev/null || true
+  done
+
+  flatpak --user override --filesystem=xdg-config/gtk-3.0:rw 2>/dev/null || true
+  flatpak --user override --filesystem=xdg-config/gtk-4.0:rw 2>/dev/null || true
+}
+
+gnome_extensions() {
+  if ! has_cmd gext; then
+    has_cmd pipx || cmd_dev_uv
+    pipx install gnome-extensions-cli --system-site-packages
+  fi
+
+  if ! has_cmd gext; then
+    error "gext not found, skipping gnome extensions"
+    return
+  fi
+
+  local extensions=(
+    "paperwm@paperwm.github.com"
+    "switcher@landau.fi"
+    "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
+    "blur-my-shell@aunetx"
+    "user-theme@gnome-shell-extensions.gcampax.github.com"
+  )
+
+  for ext in "${extensions[@]}"; do
+    gext install "$ext" 2>/dev/null || true
+    gext enable "$ext" 2>/dev/null || true
+  done
+}
+
+gnome_settings() {
+  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
+  gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+  gsettings set org.gnome.desktop.interface accent-color 'green'
+  gsettings set org.gnome.desktop.interface gtk-key-theme "Emacs"
+  gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
+
+  gsettings set org.gnome.mutter dynamic-workspaces false
+  gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
+
+  dconf write /org/gnome/shell/extensions/blur-my-shell/panel/blur "false"
+  dconf write /org/gnome/shell/extensions/blur-my-shell/applications/whitelist "['org.gnome.Ptyxis', 'dev.zed.Zed']"
+
+  dconf write /org/gnome/shell/extensions/switcher/max-width-percentage "uint32 25"
+  dconf write /org/gnome/shell/extensions/switcher/font-size "uint32 16"
+  dconf write /org/gnome/shell/extensions/switcher/icon-size "uint32 16"
+
+  dconf write /org/gnome/shell/extensions/paperwm/show-workspace-indicator false
+  dconf write /org/gnome/shell/extensions/paperwm/show-window-position-bar false
+
+  dconf write /org/gnome/shell/extensions/paperwm/cycle-width-steps "[0.3333, 0.5, 0.6667]"
+
+  dconf write /org/gnome/shell/extensions/paperwm/selection-border-size 5
+  dconf write /org/gnome/shell/extensions/paperwm/window-gap 12
+  dconf write /org/gnome/shell/extensions/paperwm/horizontal-margin 12
+  dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
+  dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
+}
+
+gnome_keybindings() {
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/close-window "['<Super>BackSpace', '<Super>q']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-right "['<Super>Right']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-left "['<Super>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-up "['<Super>Up']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-down "['<Super>Down']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-up "['<Shift><Super>Up']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-down "['<Shift><Super>Down']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-left "['<Shift><Super>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-right "['<Shift><Super>Right']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-up-workspace "['<Super>Page_Up', '<Super><Control>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-down-workspace "['<Super>Page_Down', '<Super><Control>Right']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-up-workspace "['<Shift><Super>Page_Up', '<Super><Control><Shift>Left']"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-down-workspace "['<Shift><Super>Page_Down', '<Super><Control><Shift>Right']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/new-window "['<Super>n']"
+
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/move-space-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/open-window-position-down "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/open-window-position-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/swap-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-above "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-below "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-left "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-monitor-right "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-next "@as []"
+  dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-previous "@as []"
+  dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
+
+  dconf write /org/gnome/shell/extensions/dash-to-dock/hot-keys false
+  dconf write /org/gnome/desktop/wm/preferences/num-workspaces 4
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-1 "['<Super>1']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-2 "['<Super>2']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-3 "['<Super>3']"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
+  dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
+
+  gnome_create_shortcut "Terminal" "ptyxis -s" "<Super>Return"
+
+  dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
+  dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
+}
+
+gnome_ptyxis() {
+  log "Configuring Ptyxis"
+
+  gsettings set org.gnome.Ptyxis use-system-font false
+  gsettings set org.gnome.Ptyxis interface-style 'system'
+
+  if fc-list : family 2>/dev/null | grep -qi 'jetbrains.*nerd'; then
+    gsettings set org.gnome.Ptyxis font-name 'JetbrainsMono Nerd Font 11'
+  fi
+
+  local profid
+  profid="$(gsettings get org.gnome.Ptyxis default-profile-uuid | tr -d "'")"
+
+  local profile="org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/${profid}/"
+  gsettings set "$profile" opacity 0.85
+  gsettings set "$profile" palette "Everforest"
+
+  if is_atomic; then
+    gsettings set "$profile" custom-command '/usr/bin/fish'
+  fi
+}
+
+gnome_packages() {
+  has_cmd brew || brew_install
+  log "Installing fonts..."
+  brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+
+  if ! is_atomic; then
+    log "Installing system packages..."
+    sudo dnf install -y gnome-tweaks 2>/dev/null || true
+  fi
+}
+
+cmd_gnome() {
+  if ! has_cmd gsettings; then
+    error "gsettings not found, skipping gnome setup"
+    return
+  fi
+  if ! has_cmd dconf; then
+    error "dconf not found, skipping gnome setup"
+    return
+  fi
+
+  local subcmd="${1:-}"
+  case "$subcmd" in
+  packages) gnome_packages ;;
+  flatpaks) gnome_flatpaks ;;
+  extensions) gnome_extensions ;;
+  settings) gnome_settings ;;
+  keybindings) gnome_keybindings ;;
+  ptyxis) gnome_ptyxis ;;
+  help)
+    cat <<'EOF'
+Usage: setup gnome <command>
+  Available commands:
+  packages       Install GNOME packages
+  flatpaks       Manage GNOME flatpaks
+  extensions     Install GNOME extensions(paperwm etc)
+  settings       Configure GNOME settings
+  keybindings    Configure GNOME keybindings
+  ptyxis         Configure Ptyxis terminal
+  help           Show this help message
+EOF
+    ;;
+  "")
+    gnome_packages
+    gnome_flatpaks
+    gnome_extensions
+    gnome_settings
+    gnome_keybindings
+    gnome_ptyxis
+    ;;
+  *)
+    error "Unknown command: $subcmd"
+    cmd_gnome help
+    ;;
+  esac
+}
+
+#################
+### Dev setup ###
+#################
+
+cmd_dev_zed() {
+  if has_cmd "$HOME/.local/bin/zed"; then
+    log "zed is already installed"
+    return
+  fi
+
+  log "Installing zed"
+  curl -f https://zed.dev/install.sh | sh
+
+  deploy_config "zed"
+}
+
+cmd_dev_rust() {
+  if has_cmd rustup; then
+    log "rustup is already installed"
+    return
+  fi
+
+  log "Installing rustup"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+}
+
+cmd_dev_uv() {
+  if has_cmd uv; then
+    log "uv is already installed"
+    return
+  fi
+
+  log "Installing uv"
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  if ! has_cmd pipx; then
+    log "Installing pipx"
+    uv tool install pipx
+  fi
+}
+
+cmd_dev_vp() {
+  if ! has_cmd vp; then
+    log "Installing vp"
+    curl -fsSL https://vite.plus | bash
+  fi
+
+  log "Installing node"
+  vp env install latest
+}
+
+cmd_dev_ai() {
+  has_cmd npm || cmd_dev_vp
+
+  local npm_pkgs=(
+    "@google/gemini-cli"
+    "@mermaid-js/mermaid-cli"
+    "opencode-ai"
+    "@openai/codex"
+    "@augmentcode/auggie"
+  )
+
+  log "Installing npm packages"
+  for pkg in "${npm_pkgs[@]}"; do
+    vp install -g "$pkg"
+  done
+}
+
+cmd_dev() {
+  local subcmd="${1:-}"
+  case "$subcmd" in
+  zed) cmd_dev_zed ;;
+  rust) cmd_dev_rust ;;
+  uv) cmd_dev_uv ;;
+  vp) cmd_dev_vp ;;
+  ai) cmd_dev_ai ;;
+  help)
+    cat <<'EOF'
+Usage: setup dev <command>
+
+Commands:
+  rust    Install rustup
+  uv      Install uv (Python package manager)
+  vp      Install vp (Vite Plus) and latest Node.js
+  zed     Install and configure Zed editor
+  ai      Install AI CLI tools
+  help    Show this help message
+
+Run without arguments to install all (rust, uv, vp, ai).
+EOF
+    ;;
+  "")
+    cmd_dev_rust
+    cmd_dev_uv
+    cmd_dev_vp
+    cmd_dev_ai
+    ;;
+  *)
+    error "Unknown command: $subcmd"
+    cmd_dev help
+    ;;
+  esac
+}
+
+cmd_zed() {
+  cmd_dev zed
+}
+
+####################
+### VSCode setup ###
+####################
+
+cmd_vscode_install() {
+  if has_cmd code; then
+    log "vscode already installed. Skipping."
+    return
+  fi
+
+  log "Installing vscode"
+  has_cmd brew || brew_install
+  brew install --cask visual-studio-code-linux
+}
+
+cmd_vscode_config() {
+  local extensions=(
+    "Catppuccin.catppuccin-vsc"
+    "mads-hartmann.bash-ide-vscode"
+  )
+
+  log "Installing vscode extensions"
+  for ext in "${extensions[@]}"; do
+    code --install-extension "$ext" 2>/dev/null || true
+  done
+
+  deploy_config "Code"
+}
+
+cmd_vscode() {
+  local subcmd="${1:-}"
+  case "$subcmd" in
+  install) cmd_vscode_install ;;
+  config) cmd_vscode_config ;;
+  "")
+    cmd_vscode_install
+    cmd_vscode_config
+    ;;
+  *)
+    error "Unknown command: $subcmd"
+    ;;
+  esac
+}
+
+# Deploy command
+
+cmd_deploy() {
+  local package="${1:-}"
+  [ -z "$package" ] && die "package name required"
+  deploy_config "$package"
+}
+
+# Help
+
+print_help() {
+  cat <<'EOF'
+Usage: setup <command> [args...]
+
+Commands:
+  shell             Shell tools and fish setup
+  gnome             Use gnome with scrolling layout similar to niri
+  dev               Development tools (rust, uv, vp)
+  zed               Install and configure Zed editor
+  vscode            Install and configure vscode
+  dotfiles          Clone dotfiles and bootstrap shell
+  brew              Install Homebrew
+  deploy            Deploy dotfiles
+  help              Show this help message
+EOF
+}
+
+cmd_dotfiles() {
   dotfiles_install
+
+  if [ -f "$HOME/.bashrc" ]; then
+    grep -qF 'source ~/.fedora-config/bash/bashrc' "$HOME/.bashrc" ||
+      echo 'source ~/.fedora-config/bash/bashrc' >>"$HOME/.bashrc"
+  fi
+}
+
+cmd_brew() {
   brew_install
   brew tap ublue-os/tap
-  brew install nushell
+}
+
+main() {
+  export PATH="/home/linuxbrew/.linuxbrew/bin:$DOT_DIR/scripts:$HOME/.vite-plus/bin:$HOME/bin:$HOME/.pixi/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+  is_fedora || is_atomic || die "Only Fedora/Bluefin/Silverblue supported. Quitting."
+
+  local cmd=""
+  local cmd_args=()
+
+  for arg in "$@"; do
+    if [ -z "$cmd" ]; then
+      cmd="$arg"
+    else
+      cmd_args+=("$arg")
+    fi
+  done
+
+  if [ -z "$cmd" ]; then
+    cmd_dotfiles
+  else
+    case "$cmd" in
+    shell) cmd_shell ;;
+    dotfiles) cmd_dotfiles ;;
+    brew) cmd_brew ;;
+    zed) cmd_zed ;;
+    help) print_help ;;
+    gnome) cmd_gnome "${cmd_args[@]}" ;;
+    dev) cmd_dev "${cmd_args[@]}" ;;
+    vscode) cmd_vscode "${cmd_args[@]}" ;;
+    deploy) cmd_deploy "${cmd_args[@]}" ;;
+    *)
+      error "Unknown command: $cmd"
+      print_help
+      exit 1
+      ;;
+    esac
+  fi
 }
 
 main "$@"

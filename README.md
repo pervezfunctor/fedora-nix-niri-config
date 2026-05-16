@@ -8,14 +8,14 @@ Run the following bootstrap script
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/fedora-config/main/scripts/setup)"
 ```
 
-This script clones this repo to `~/.fedora-config`, installs brew and nushell.
+This script clones this repo to `~/.fedora-config`, and add a single line to your ~/.bashrc.
 
 ## Shell
 
 Restart your terminal and execute the following script to install shell tools and setup fish as default shell(on non atomic fedora).
 
 ```sh
-~/.fedora-config/scripts/setup.nu shell
+setup shell
 ```
 
 Reboot your computer and open terminal. You should be in fish shell.
@@ -41,13 +41,16 @@ echo 'source ~/.fedora-config/bash/bashrc' >> ~/.bashrc
 Following script will install node with vite plus, Rust with rustup, uv for Python.
 
 ```sh
-setup.nu dev
+setup dev
 ```
 
-Install and setup editor with
+Install and setup your preferred editor
 
 ```sh
-setup.nu zed # or
+setup.nu zed
+```
+
+```sh
 setup.nu vscode
 ```
 
@@ -58,27 +61,32 @@ incus supports simple cloud-init based virtual machines that are great for devel
 Install and setup incus with
 
 ```sh
-incus.nu install
-incus.nu install post # after reboot
+vm install
+```
+
+Reboot your computer. Then execute the following.
+
+```sh
+vm install post
 ```
 
 Create a Debian VM with
 
 ```sh
-incus.nu debian         # one of debian, fedora, ubuntu, tumbleweed and arch
+vm debian         # one of debian, fedora, ubuntu, tumbleweed and arch
 ```
 
 Wait for a few minutes(for cloud-init to finish). Then list all VMs, confirm they have IPv4 address assigned and SSH into the one you just created.
 
 ```sh
-incus.nu list
-incus.nu ssh <name> # or ssh "$USER"@<ip-address>
+vm list
+vm ssh <name> # or ssh "$USER"@<ip-address>
 ```
 
 For additional commands
 
 ```sh
-incus.nu help
+vm help
 ```
 
 ## Gnome setup
@@ -86,7 +94,7 @@ incus.nu help
 To setup gnome, and use scrolling layout(paperwm), use the following script
 
 ```sh
-setup.nu gnome
+setup gnome
 ```
 
 Some important keybindings
@@ -102,7 +110,7 @@ Some important keybindings
 
 ## Bluefin
 
-Most of the scripts(not all) from this repository should work on bluefin too.
+No need to use scripts from this repository. Use the following instead.
 
 First switch to devmode
 
@@ -117,3 +125,9 @@ ujust dx-group
 ```
 
 Restart your computer again. You should have `incus`, `libvirt` and `vscode` installed.
+
+You could setup your shell with
+
+```sh
+ujust bluefin-cli
+```

@@ -1,0 +1,299 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+INCUS_CONFIG="$(dirname "$0")/incus.yml"
+SSH_USER="pervez"
+
+log_info() {
+  echo -e "\033[32m[INFO]\033[0m $1"
+}
+
+log_error() {
+  echo -e "\033[31m[ERROR]\033[0m $1" >&2
+}
+
+log_warn() {
+  echo -e "\033[33m[WARN]\033[0m $1"
+}
+
+is_atomic() {
+  command -v rpm-ostree &>/dev/null
+}
+
+has_cmd() {
+  command -v "$1" &>/dev/null
+}
+
+prompt_yn() {
+  local prompt="$1"
+  local default="${2:-n}"
+  local response
+
+  while true; do
+    if [[ "$default" == "y" ]]; then
+      read -rp "$prompt [Y/n] " response
+    else
+      read -rp "$prompt [y/N] " response
+    fi
+
+    case "${response,,}" in
+    y | yes) return 0 ;;
+    n | no) return 1 ;;
+    "") [[ "$default" == "y" ]] && return 0 || return 1 ;;
+    esac
+  done
+}
+
+require_incus() {
+  if ! command -v incus &>/dev/null; then
+    log_error "incus is not installed. Run 'vm install' first."
+    exit 1
+  fi
+}
+
+get_pubkey() {
+  local ssh_key="${1:-}"
+  if [[ -z "$ssh_key" ]]; then
+    local pubkey_path="$HOME/.ssh/id_ed25519.pub"
+    if [[ ! -f "$pubkey_path" ]]; then
+      ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -q -N ""
+    fi
+    cat "$pubkey_path" | tr -d '\n'
+  else
+    echo "$ssh_key"
+  fi
+}
+
+cmd_install() {
+  if is_atomic; then
+    log_error "incus installation is not supported on atomic systems"
+    return 1
+  fi
+
+  log_info "Installing incus"
+  sudo dnf install -y incus incus-tools
+
+  log_info "Adding user to incus groups"
+  sudo usermod -aG incus "$USER" || true
+  sudo usermod -aG incus-admin "$USER" || true
+
+  log_info "Enabling incus socket"
+  sudo systemctl enable --now incus.socket || true
+
+  log_info "Configuring firewalld for incus"
+  sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent || true
+  sudo firewall-cmd --reload || true
+
+  log_info "Initializing incus admin with $INCUS_CONFIG"
+  sg incus-admin -- incus admin init --preseed <"$INCUS_CONFIG" || true
+
+  log_info "Incus configured. Reboot your system and use vm script."
+}
+
+cmd_list() {
+  incus list
+}
+
+cmd_list_images() {
+  incus image list images: | grep "/cloud"
+}
+
+cmd_search() {
+  local query="$1"
+  incus image list images: | grep "$query" | grep "/cloud"
+}
+
+launch_vm() {
+  local image="$1"
+  local name="$2"
+  local ssh_key="$3"
+  local ssh_service="$4"
+
+  local pubkey
+  pubkey=$(get_pubkey "$ssh_key")
+
+  local cloud_init
+  cloud_init=$(
+    cat <<EOF
+#cloud-config
+users:
+  - name: $SSH_USER
+    ssh_authorized_keys:
+      - $pubkey
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+package_update: true
+packages:
+  - qemu-guest-agent
+  - openssh-server
+  - wget
+  - curl
+runcmd:
+  - systemctl enable --now $ssh_service
+EOF
+  )
+
+  incus launch "$image" "$name" --vm --config="cloud-init.user-data=$cloud_init"
+
+  echo -e "\n\033[32m> VM '$name' created. Wait a few seconds for cloud-init to finish.\033[0m"
+  echo "Use: incus exec $name -- bash -c 'cloud-init status --wait'"
+}
+
+cmd_debian() {
+  local name="${1:-debian}"
+  local ssh_key="${2:-}"
+  launch_vm "images:debian/13/cloud" "$name" "$ssh_key" "ssh"
+}
+
+cmd_ubuntu() {
+  local name="${1:-ubuntu}"
+  local ssh_key="${2:-}"
+  launch_vm "images:ubuntu/26.04/cloud" "$name" "$ssh_key" "ssh"
+}
+
+cmd_fedora() {
+  local name="${1:-fedora}"
+  local ssh_key="${2:-}"
+  launch_vm "images:fedora/44/cloud" "$name" "$ssh_key" "sshd"
+}
+
+cmd_tumbleweed() {
+  local name="${1:-tumbleweed}"
+  local ssh_key="${2:-}"
+  launch_vm "images:opensuse/tumbleweed/cloud" "$name" "$ssh_key" "sshd"
+}
+
+cmd_ssh() {
+  local name="$1"
+  local ip
+  ip=$(incus list "$name" --format json | jq -r '
+    .[0].state.network
+    | to_entries[]
+    | select(.key | test("^e(n|th)"))
+    | .value.addresses[]
+    | select(.family == "inet")
+    | .address
+  ' | head -1)
+
+  if [[ -z "$ip" ]]; then
+    log_error "No IP found for VM '$name'"
+    return 1
+  fi
+
+  ssh -o StrictHostKeyChecking=no "$SSH_USER@$ip"
+}
+
+cmd_destroy() {
+  local name="$1"
+  if prompt_yn "Destroy VM '$name'?"; then
+    incus stop "$name" || true
+    incus delete "$name"
+  fi
+}
+
+cmd_install_post() {
+  sudo systemctl enable --now incus.socket || true
+  incus admin init || true
+  sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent || true
+  sudo firewall-cmd --reload || true
+}
+
+cmd_start() {
+  local name="$1"
+  incus start "$name"
+}
+
+cmd_stop() {
+  local name="$1"
+  incus stop "$name"
+}
+
+cmd_restart() {
+  local name="$1"
+  incus restart "$name"
+}
+
+cmd_help() {
+  cat <<'EOF'
+Usage: vm <command>
+Commands:
+  install         Install and configure incus
+  install post    Steps after installing incus and reboot
+
+  list            List running instances
+  list images     List available cloud images
+  search <query>  Search cloud images by keyword
+
+  debian          Create a Debian VM with cloud-init
+  ubuntu          Create an Ubuntu VM with cloud-init
+  fedora          Create a Fedora VM with cloud-init
+  tumbleweed      Create an openSUSE Tumbleweed VM with cloud-init
+
+  ssh <name>      SSH into a VM instance
+  destroy <name>  Stop and delete a VM instance
+
+  start <name>    Start a VM instance
+  stop <name>     Stop a VM instance
+  restart <name>  Restart a VM instance
+EOF
+}
+
+case "${1:-help}" in
+install)
+  if [[ "${2:-}" == "post" ]]; then
+    cmd_install_post
+  else
+    cmd_install
+  fi
+  ;;
+-h | --help | help)
+  cmd_help
+  ;;
+*)
+  require_incus
+  case "$1" in
+  list)
+    if [[ "${2:-}" == "images" ]]; then
+      cmd_list_images
+    else
+      cmd_list
+    fi
+    ;;
+  search)
+    cmd_search "${2:?search query required}"
+    ;;
+  debian)
+    cmd_debian "${2:-debian}" "${3:-}"
+    ;;
+  ubuntu)
+    cmd_ubuntu "${2:-ubuntu}" "${3:-}"
+    ;;
+  fedora)
+    cmd_fedora "${2:-fedora}" "${3:-}"
+    ;;
+  tumbleweed)
+    cmd_tumbleweed "${2:-tumbleweed}" "${3:-}"
+    ;;
+  ssh)
+    cmd_ssh "${2:?VM name required}"
+    ;;
+  destroy)
+    cmd_destroy "${2:?VM name required}"
+    ;;
+  start)
+    cmd_start "${2:?VM name required}"
+    ;;
+  stop)
+    cmd_stop "${2:?VM name required}"
+    ;;
+  restart)
+    cmd_restart "${2:?VM name required}"
+    ;;
+  *)
+    cmd_help
+    ;;
+  esac
+  ;;
+esac
