@@ -124,11 +124,3 @@ if has_cmd carapace
     set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
     carapace _carapace | source
 end
-
-if has_cmd distrobox
-  alias dt 'distrobox'
-end
-
-if has_cmd incus
-  alias vm 'incus.nu'
-end
