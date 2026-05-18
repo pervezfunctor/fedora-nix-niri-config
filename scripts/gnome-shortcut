@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+log() {
+  printf "\033[1;34m🚀 %s\033[0m\n" "$*"
+}
+
 gnome_shortcut() {
   local name="$1"
   local command="$2"

@@ -155,7 +155,9 @@ fish_install() {
   fi
 
   log "Setting fish as default shell..."
-  if sudo chsh -s "$fish_path" "$USER" 2>/dev/null; then
+  if is_atomic; then
+    log "Run 'setup gnome' to setup gnome and set fish as default in ptyxis"
+  elif sudo chsh -s "$fish_path" "$USER" 2>/dev/null; then
     log "Successfully set fish as default shell"
   else
     error "Failed to set fish as default shell"
