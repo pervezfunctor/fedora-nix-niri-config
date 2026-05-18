@@ -5,7 +5,7 @@ if ! [[ $- == *i* ]]; then
   return
 fi
 
-if command -v rpm-ostree 2>&1; then
+if command -v rpm-ostree >/dev/null 2>&1; then
   return
 fi
 
