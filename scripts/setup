@@ -427,6 +427,8 @@ gnome_wallpapers() {
   if has_cmd brew; then
     brew install --cask bluefin-wallpapers bluefin-wallpapers-extra
   fi
+
+  dconf write /org/gnome/desktop/background/picture-uri 'file:///home/pervez/.local/share/backgrounds/bluefin/04-bluefin.xml' || true
 }
 
 cmd_gnome() {
